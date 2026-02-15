@@ -47,3 +47,18 @@ smart-flood-evacuation-platform/
 │
 ├── .gitignore
 └── README.md
+
+
+System flow 
+
+Rainfall Data  → Update Grid Risk
+Dam Water Level → Generate Buffer
+User Reports → Generate Risk Bubbles
+                        ↓
+Combine Risk Layers
+                        ↓
+Modify Graph Edge Weights
+                        ↓
+Run Dijkstra
+                        ↓
+Return Safest Route
