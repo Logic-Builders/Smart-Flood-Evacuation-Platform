@@ -1,6 +1,6 @@
 # Flood Evacuation Backend
 
-Smart Flood Evacuation Routing & Alert Platform — Backend Service  
+Smart Flood Evacuation Routing Platform — Backend Service  
 **Stack:** Go · PostgreSQL · PostGIS · Docker
 
 ---
