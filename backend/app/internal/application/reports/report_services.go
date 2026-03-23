@@ -52,3 +52,23 @@ func (s *ReportService) SubmitReport(
 
 	return report, nil
 }
+
+//GetReport fetches a single report by ID
+
+func (s *ReportService) GetReport(id uuid.UUID) (*domain.HazardReport, error) {
+	report, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("report not found: %w", err)
+	}
+	return report, nil
+}
+
+//GetPendingReports returns all reports waiting for admin review
+
+func (s *ReportService) GetPendingReports() ([]*domain.HazardReport, error) {
+	reports, err := s.repo.GetPending()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch pending reports: %w", err)
+	}
+	return reports, nil
+}
