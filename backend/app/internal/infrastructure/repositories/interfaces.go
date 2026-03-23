@@ -5,8 +5,7 @@ import (
 	"github.com/logicbuilders/flood-evacuation-backend/internal/domain"
 )
 
-// ReportRepository — your teammate implements this with real SQL
-// You use this interface in your services
+// ReportRepository — Database implements this with real SQL
 type ReportRepository interface {
 	Save(report *domain.HazardReport) error
 	GetByID(id uuid.UUID) (*domain.HazardReport, error)
