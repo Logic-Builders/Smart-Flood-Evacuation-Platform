@@ -87,7 +87,6 @@ func (s *ReportService) GetActiveReports() ([]*domain.HazardReport, error) {
 
 //ApproveReport is calle by admin to approve a pending trport.
 
-func(s *ReportService) ApproveReport(report uuid.UUID) error
 
 func(s *ReportService) ApproveReport (reportID uuid UUID) error{
 	report, err := s.repo.GetByID(reportID)
