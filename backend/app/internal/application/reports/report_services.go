@@ -72,3 +72,26 @@ func (s *ReportService) GetPendingReports() ([]*domain.HazardReport, error) {
 	}
 	return reports, nil
 }
+
+//GetActiveReports returns all approved non-expired reports
+//These are the reports that affect routing
+
+func (s *ReportService) GetActiveReports() ([]*domain.HazardReport, error) {
+	reports, err = s.repo.GetActive()
+	if err != nil {
+		return nil.fmt.Errorf("failed to fetch active reports: %w", error)
+	}
+	return reports, nil
+}
+
+
+//ApproveReport is calle by admin to approve a pending trport.
+
+func(s *ReportService) ApproveReport(report uuid.UUID) error
+
+func(s *ReportService) ApproveReport (reportID uuid UUID) error{
+	report, err := s.repo.GetByID(reportID)
+	if err != nil{
+		return fmt. Errorf(report not found.)
+	}
+}
