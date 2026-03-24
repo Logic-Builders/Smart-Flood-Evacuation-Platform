@@ -77,9 +77,9 @@ func (s *ReportService) GetPendingReports() ([]*domain.HazardReport, error) {
 //These are the reports that affect routing
 
 func (s *ReportService) GetActiveReports() ([]*domain.HazardReport, error) {
-	reports, err = s.repo.GetActive()
+	reports, err := s.repo.GetActive()
 	if err != nil {
-		return nil.fmt.Errorf("failed to fetch active reports: %w", error)
+		return nil, fmt.Errorf("failed to fetch active reports: %w", err)
 	}
 	return reports, nil
 }
