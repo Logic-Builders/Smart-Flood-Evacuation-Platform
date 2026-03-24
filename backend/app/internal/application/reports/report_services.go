@@ -3,9 +3,9 @@ package reports
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/domain"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
-	"githun.com/google/uuid"
 )
 
 // Report service handles all the business logic for hazard reports
@@ -84,13 +84,42 @@ func (s *ReportService) GetActiveReports() ([]*domain.HazardReport, error) {
 	return reports, nil
 }
 
-
 //ApproveReport is calle by admin to approve a pending trport.
 
-
-func(s *ReportService) ApproveReport (reportID uuid UUID) error{
+func (s *ReportService) ApproveReport(reportID uuid.UUID) error {
 	report, err := s.repo.GetByID(reportID)
-	if err != nil{
-		return fmt. Errorf(report not found.)
+	if err != nil {
+		return fmt.Errorf("report not found: %w", err)
 	}
+
+	//Only pending reports can be approved
+	if report.ValidationStatus != domain.StatusPending {
+		return fmt.Errorf("report is not pending, current status: %s", report.ValidationStatus)
+	}
+
+	return s.repo.UpdateStatus(reportID, domain.StatusApproved)
+}
+
+// RejectReport is called by admin to reject a pending report
+func (s *ReportService) RejectReport(reportID uuid.UUID) error {
+	report, err := s.repo.GetByID(reportID)
+	if err != nil {
+		return fmt.Errorf("report not found: %w", err)
+	}
+
+	if report.ValidationStatus != domain.StatusPending {
+		return fmt.Errorf("report is not pending, current status: %s", report.ValidationStatus)
+	}
+
+	return s.repo.UpdateStatus(reportID, domain.StatusRejected)
+}
+
+func isValidReportType(rt domain.ReportType) bool {
+	switch rt {
+	case domain.ReportTypeFloodedRoad,
+		domain.ReportTypeDamagedBridge,
+		domain.ReportTypeBlockedRoad:
+		return true
+	}
+	return false
 }
