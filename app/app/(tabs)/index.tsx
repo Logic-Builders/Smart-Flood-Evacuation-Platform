@@ -6,7 +6,6 @@ export default function Home() {
 
   return (
     <View className="flex-1 items-center justify-center bg-blue-50">
-
       <Text className="text-3xl font-bold mb-10">
         Flood Safety Dashboard
       </Text>
@@ -28,7 +27,6 @@ export default function Home() {
           View Safe Route Map
         </Text>
       </TouchableOpacity>
-
     </View>
   );
 }
