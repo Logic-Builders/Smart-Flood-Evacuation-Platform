@@ -6,6 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/logicbuilders/flood-evacuation-backend/config"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/application/reports"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/handlers"
 )
 
 func main() {
@@ -17,6 +20,12 @@ func main() {
 	// Load config
 	cfg := config.Load()
 
+	//Wire up dependencies
+	//MockRepository -> ReportService -> Report Handler
+	reportRepo := repositories.NewMockRepository()
+	reportService := reports.NewReportService(reportRepo)
+	reportHandler := handlers.NewReportHandler(reportService)
+
 	// Create router
 	router := gin.Default()
 
@@ -27,6 +36,22 @@ func main() {
 			"message": "Flood Evacuation API is running",
 		})
 	})
+
+	//API routes
+	v1 := router.Group("/api/v1")
+	{
+		//public report repositories
+		v1.POST("/reports", reportHandler.Submit)
+		v1.GET("/reports/active", reportHandler.GetActive)
+
+		//Admin report endpoints
+		admin := v1.Group("/admin")
+		{
+			admin.GET("/reports/pending", reportHandler.GetPending)
+			admin.PATCH("/reports/:id/approve", reportHandler.Approve)
+			admin.PATCH("/reports/:id/reject", reportHandler.Reject)
+		}
+	}
 
 	// Start server
 	log.Printf("Server starting on port %s", cfg.Port)
