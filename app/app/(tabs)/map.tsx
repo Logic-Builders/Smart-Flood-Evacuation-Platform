@@ -1,43 +1,42 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
+  Text,
   TextInput,
   TouchableOpacity,
-  Text,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
+  ActivityIndicator,
+  FlatList,
 } from "react-native";
-import MapView, { Marker, Polyline, Polygon, Region, UrlTile } from "react-native-maps";
+import MapView, {
+  Marker,
+  Polygon,
+  Polyline,
+  UrlTile,
+} from "react-native-maps";
 import * as Location from "expo-location";
 
 type Coordinate = { latitude: number; longitude: number };
 
-type FloodZone = {
-  id: string;
-  gauge_id: string;
-  severity: "NORMAL" | "WATCH" | "WARNING" | "EXTREME";
-  boundary: { coordinates: Coordinate[] };
-};
-
-type Report = {
-  id: string;
-  location: Coordinate;
-  report_type: "FLOODED_ROAD" | "DAMAGED_BRIDGE" | "BLOCKED_ROAD";
-  severity: number;
-  description: string;
-  expires_at: string;
-};
-
-const API_BASE = "http://10.10.11.136:8080"; // your PC LAN IP
-
 export default function MapScreen() {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [activeInput, setActiveInput] = useState<"start" | "end" | null>(null);
+
   const [routeCoords, setRouteCoords] = useState<Coordinate[]>([]);
-  const [floodZones, setFloodZones] = useState<FloodZone[]>([]);
-  const [activeReports, setActiveReports] = useState<Report[]>([]);
-  const [region, setRegion] = useState<Region>({
+  const [floodZones, setFloodZones] = useState<any[]>([]);
+  const [activeReports, setActiveReports] = useState<any[]>([]);
+  const [loadingRoute, setLoadingRoute] = useState(false);
+
+  const [userLocation, setUserLocation] = useState<Coordinate | null>(null);
+
+  const [steps, setSteps] = useState<any[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [distance, setDistance] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const [region, setRegion] = useState({
     latitude: 7.8731,
     longitude: 80.7718,
     latitudeDelta: 0.5,
@@ -45,238 +44,254 @@ export default function MapScreen() {
   });
 
   useEffect(() => {
+    requestLocation();
     fetchFloodZones();
     fetchActiveReports();
   }, []);
 
+  const requestLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") return;
+
+    Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 2000,
+        distanceInterval: 5,
+      },
+      (loc) => {
+        const coord = {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+        };
+        setUserLocation(coord);
+      }
+    );
+  };
+
   const fetchFloodZones = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/v1/flood-zones`);
+      const res = await fetch("http://10.10.11.136:8080/api/v1/flood-zones");
       const data = await res.json();
       setFloodZones(data.data.zones);
-    } catch (err) {
-      console.error("Fetch Flood Zones Error:", err);
-      // Mock data if backend not ready
-      setFloodZones([
-        {
-          id: "1",
-          gauge_id: "LK_KELANI_001",
-          severity: "WARNING",
-          boundary: {
-            coordinates: [
-              { latitude: 7.8731, longitude: 80.7718 },
-              { latitude: 7.8800, longitude: 80.7600 },
-              { latitude: 7.8650, longitude: 80.7650 },
-            ],
-          },
-        },
-      ]);
-    }
+    } catch {}
   };
 
   const fetchActiveReports = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/v1/reports/active`);
+      const res = await fetch("http://10.10.11.136:8080/api/v1/reports/active");
       const data = await res.json();
       setActiveReports(data.data.reports);
-    } catch (err) {
-      console.error("Fetch Active Reports Error:", err);
-      // Mock report
-      setActiveReports([
-        {
-          id: "r1",
-          location: { latitude: 7.874, longitude: 80.770 },
-          report_type: "FLOODED_ROAD",
-          severity: 4,
-          description: "Road flooded near Kandy lake",
-          expires_at: "2025-03-09T06:00:00Z",
-        },
-      ]);
-    }
+    } catch {}
   };
 
-  const requestLocationPermission = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission denied", "Allow location access to calculate route");
-      return false;
-    }
-    return true;
+  const searchLocation = async (text: string) => {
+    if (text.length < 3) return setSuggestions([]);
+
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${text}`
+    );
+    const data = await res.json();
+    setSuggestions(data);
   };
 
-  // Check if a point is inside any flood zone
-  const isSafe = (coord: Coordinate) => {
-    for (let zone of floodZones) {
-      const lats = zone.boundary.coordinates.map((z) => z.latitude);
-      const lngs = zone.boundary.coordinates.map((z) => z.longitude);
-      const minLat = Math.min(...lats);
-      const maxLat = Math.max(...lats);
-      const minLng = Math.min(...lngs);
-      const maxLng = Math.max(...lngs);
-      if (
-        coord.latitude >= minLat &&
-        coord.latitude <= maxLat &&
-        coord.longitude >= minLng &&
-        coord.longitude <= maxLng
-      ) {
-        return false;
-      }
-    }
-    return true;
+  const selectSuggestion = (item: any) => {
+    if (activeInput === "start") setStart(item.display_name);
+    else setEnd(item.display_name);
+    setSuggestions([]);
   };
 
-  // Get route from OSRM API
-  const getRoute = async (startCoord: Coordinate, endCoord: Coordinate) => {
-    try {
-      const url = `http://router.project-osrm.org/route/v1/driving/${startCoord.longitude},${startCoord.latitude};${endCoord.longitude},${endCoord.latitude}?geometries=geojson`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.routes && data.routes.length > 0) {
-        return data.routes[0].geometry.coordinates.map(([lng, lat]: [number, number]) => ({
-          latitude: lat,
-          longitude: lng,
-        }));
-      }
-      return [];
-    } catch (err) {
-      console.error("OSRM Routing Error:", err);
-      return [];
-    }
+  const centerOnUser = () => {
+    if (!userLocation) return;
+    setRegion({
+      ...userLocation,
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
+    });
   };
 
   const calculateRoute = async () => {
-    if (!start || !end) return Alert.alert("Error", "Enter start & end locations");
+    if (!start || !end) return Alert.alert("Error", "Enter start & end");
 
-    const hasPermission = await requestLocationPermission();
-    if (!hasPermission) return;
+    setLoadingRoute(true);
 
     try {
       const startLoc = await Location.geocodeAsync(start);
       const endLoc = await Location.geocodeAsync(end);
 
-      if (!startLoc.length || !endLoc.length)
-        return Alert.alert("Error", "Invalid start or end location");
+      const s = startLoc[0];
+      const e = endLoc[0];
 
-      const startCoord = startLoc[0];
-      const endCoord = endLoc[0];
+      const url = `https://router.project-osrm.org/route/v1/driving/${s.longitude},${s.latitude};${e.longitude},${e.latitude}?overview=full&geometries=geojson&steps=true`;
 
-      // Get road-based route from OSRM
-      let route = await getRoute(startCoord, endCoord);
+      const res = await fetch(url);
+      const data = await res.json();
 
-      // Filter out unsafe points
-      route = route.filter(isSafe);
+      const route = data.routes[0];
 
-      if (!route.length) {
-        return Alert.alert("No Safe Route", "The path intersects flooded areas");
-      }
+      setDistance(route.distance);
+      setDuration(route.duration);
 
-      setRouteCoords(route);
-      setRegion({
-        latitude: route[0].latitude,
-        longitude: route[0].longitude,
-        latitudeDelta: 0.5,
-        longitudeDelta: 0.5,
+      let coords = route.geometry.coordinates.map(([lng, lat]: any) => ({
+        latitude: lat,
+        longitude: lng,
+      }));
+
+      coords = coords.filter((p: Coordinate) => {
+        return !floodZones.some((zone) => {
+          const lats = zone.boundary.coordinates.map((z: any) => z.latitude);
+          const lngs = zone.boundary.coordinates.map((z: any) => z.longitude);
+          return (
+            p.latitude >= Math.min(...lats) &&
+            p.latitude <= Math.max(...lats) &&
+            p.longitude >= Math.min(...lngs) &&
+            p.longitude <= Math.max(...lngs)
+          );
+        });
       });
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Unable to calculate route");
+
+      setRouteCoords(coords);
+      setSteps(route.legs[0].steps);
+      setCurrentStep(0);
+
+    } catch {
+      Alert.alert("Error", "Route failed");
     }
+
+    setLoadingRoute(false);
   };
+
+  useEffect(() => {
+    if (!userLocation || steps.length === 0) return;
+
+    const step = steps[currentStep];
+    const next = step.maneuver.location;
+
+    const dist =
+      Math.sqrt(
+        Math.pow(userLocation.latitude - next[1], 2) +
+        Math.pow(userLocation.longitude - next[0], 2)
+      ) * 111000;
+
+    if (dist < 50 && currentStep < steps.length - 1) {
+      setCurrentStep((prev) => prev + 1);
+    }
+  }, [userLocation]);
 
   return (
     <View style={{ flex: 1 }}>
-      <MapView style={{ flex: 1 }} region={region}>
-        {/* OpenStreetMap Tiles */}
-        <UrlTile
-          urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maximumZ={19}
-          flipY={false}
-        />
+      <MapView style={{ flex: 1 }} region={region} showsUserLocation>
+        <UrlTile urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-        {/* Safe Route */}
+        {userLocation && <Marker coordinate={userLocation} title="You" />}
+
         {routeCoords.length > 0 && (
-          <Polyline coordinates={routeCoords} strokeColor="blue" strokeWidth={4} />
+          <Polyline coordinates={routeCoords} strokeColor="blue" strokeWidth={5} />
         )}
 
-        {/* Flood Zones */}
-        {floodZones.map((zone) => (
-          <Polygon
-            key={zone.id}
-            coordinates={zone.boundary.coordinates}
-            fillColor="rgba(255,0,0,0.3)"
-            strokeColor="red"
-            strokeWidth={2}
-          />
+        {floodZones.map((z) => (
+          <Polygon key={z.id} coordinates={z.boundary.coordinates} fillColor="rgba(255,0,0,0.3)" />
         ))}
 
-        {/* Active Reports */}
-        {activeReports.map((report) => (
-          <Marker
-            key={report.id}
-            coordinate={report.location}
-            title={report.report_type}
-            description={report.description}
-            pinColor={report.severity >= 4 ? "red" : "orange"}
-          />
+        {activeReports.map((r) => (
+          <Marker key={r.id} coordinate={r.location} />
         ))}
       </MapView>
 
-      {/* Input Panel */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{
-          position: "absolute",
-          top: 40,
-          left: 20,
-          right: 20,
-          backgroundColor: "rgba(255,255,255,0.95)",
-          borderRadius: 12,
-          padding: 15,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25,
-          shadowRadius: 3.84,
-          elevation: 5,
-        }}
-      >
+      <View style={{
+        position: "absolute",
+        top: 40,
+        left: 10,
+        right: 10,
+        backgroundColor: "white",
+        borderRadius: 10,
+        padding: 10,
+      }}>
         <TextInput
-          placeholder="Start Location"
+          placeholder="Start location"
           value={start}
-          onChangeText={setStart}
-          style={{
-            borderWidth: 1,
-            borderColor: "#ccc",
-            borderRadius: 8,
-            padding: 12,
-            marginBottom: 10,
+          onChangeText={(t) => {
+            setStart(t);
+            setActiveInput("start");
+            searchLocation(t);
           }}
         />
+
         <TextInput
           placeholder="Destination"
           value={end}
-          onChangeText={setEnd}
-          style={{
-            borderWidth: 1,
-            borderColor: "#ccc",
-            borderRadius: 8,
-            padding: 12,
-            marginBottom: 15,
+          onChangeText={(t) => {
+            setEnd(t);
+            setActiveInput("end");
+            searchLocation(t);
           }}
         />
+
+        {suggestions.length > 0 && (
+          <FlatList
+            data={suggestions}
+            keyExtractor={(item) => item.place_id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity onPress={() => selectSuggestion(item)}>
+                <Text>{item.display_name}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        )}
+
         <TouchableOpacity
           onPress={calculateRoute}
           style={{
-            backgroundColor: "#1D4ED8",
-            paddingVertical: 12,
+            backgroundColor: "blue",
+            padding: 10,
+            marginTop: 10,
             borderRadius: 8,
-            alignItems: "center",
           }}
         >
-          <Text style={{ color: "white", fontWeight: "600", fontSize: 16 }}>
-            Show Safe Route
-          </Text>
+          {loadingRoute ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={{ color: "white", textAlign: "center" }}>
+              Show Route
+            </Text>
+          )}
         </TouchableOpacity>
-      </KeyboardAvoidingView>
+      </View>
+
+      <View style={{
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: "white",
+        padding: 15,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+      }}>
+        {steps.length > 0 && (
+          <>
+            <Text style={{ fontWeight: "bold" }}>
+              Next: {steps[currentStep]?.maneuver?.instruction || "Continue"}
+            </Text>
+            <Text>Distance: {(distance / 1000).toFixed(2)} km</Text>
+            <Text>ETA: {(duration / 60).toFixed(0)} mins</Text>
+          </>
+        )}
+      </View>
+
+      <TouchableOpacity
+        onPress={centerOnUser}
+        style={{
+          position: "absolute",
+          bottom: 100,
+          right: 20,
+          backgroundColor: "white",
+          padding: 12,
+          borderRadius: 50,
+        }}
+      >
+        <Text>📍</Text>
+      </TouchableOpacity>
     </View>
   );
 }
