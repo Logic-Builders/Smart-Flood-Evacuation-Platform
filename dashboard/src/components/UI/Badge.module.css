@@ -1,0 +1,29 @@
+.badge {
+  font-size: 0.65rem;
+  font-family: 'DM Mono', monospace;
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: inline-block;
+  background: rgba(0, 201, 167, 0.15);
+  color: #00c9a7;
+}
+
+.badge.default {
+  background: rgba(0, 201, 167, 0.15);
+  color: #00c9a7;
+}
+
+.badge.red {
+  background: rgba(255, 63, 91, 0.15);
+  color: #ff3f5b;
+}
+
+.badge.yellow {
+  background: rgba(247, 201, 72, 0.15);
+  color: #f7c948;
+}
+
+.badge.live {
+  background: rgba(255, 63, 91, 0.15);
+  color: #ff3f5b;
+}
