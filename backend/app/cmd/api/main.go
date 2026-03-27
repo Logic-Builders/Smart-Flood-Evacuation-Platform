@@ -7,6 +7,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/logicbuilders/flood-evacuation-backend/config"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/reports"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/application/routing"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/handlers"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/middleware"
@@ -46,24 +47,21 @@ func main() {
 		v1.GET("/reports/active", reportHandler.GetActive)
 
 		//Admin report endpoints
-		admin := v1.Group("/admin")
-		{
-			admin.GET("/reports/pending", reportHandler.GetPending)
-			admin.PATCH("/reports/:id/approve", reportHandler.Approve)
-			admin.PATCH("/reports/:id/reject", reportHandler.Reject)
-		}
 
 		authHandler := handlers.NewAuthHandler()
 		router.POST("/auth/login", authHandler.Login)
 	}
 
-	admin := router.Group("/api/v1/admin")
+	admin := v1.Group("/admin")
 	admin.Use(middleware.RequireAuth())
 	{
 		admin.GET("/reports/pending", reportHandler.GetPending)
 		admin.PATCH("/reports/:id/approve", reportHandler.Approve)
 		admin.PATCH("/reports/:id/reject", reportHandler.Reject)
 	}
+	routingService := routing.NewRoutingService()
+	routeHandler := handlers.NewRouteHandler(routingService)
+	router.GET("/api/v1/route", routeHandler.GetRoute)
 
 	// Start server
 	log.Printf("Server starting on port %s", cfg.Port)

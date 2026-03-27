@@ -25,7 +25,7 @@ func RequireAuth() gin.HandlerFunc{
 
 		claims, err := jwtutil.ValidateToken(parts[1])
 		if err != nil{
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H("error":"invalid or expired token"))
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			return
 		}
 
