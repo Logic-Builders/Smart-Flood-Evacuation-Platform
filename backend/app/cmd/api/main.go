@@ -22,7 +22,7 @@ func main() {
 
 	//Wire up dependencies
 	//MockRepository -> ReportService -> Report Handler
-	reportRepo := repositories.NewMockRepository()
+	reportRepo := repositories.NewMockReportRepository()
 	reportService := reports.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
 
