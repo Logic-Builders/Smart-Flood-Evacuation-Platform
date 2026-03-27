@@ -9,6 +9,7 @@ import (
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/reports"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/handlers"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/middleware"
 )
 
 func main() {
@@ -51,6 +52,17 @@ func main() {
 			admin.PATCH("/reports/:id/approve", reportHandler.Approve)
 			admin.PATCH("/reports/:id/reject", reportHandler.Reject)
 		}
+
+		authHandler := handlers.NewAuthHandler()
+		router.POST("/auth/login", authHandler.Login)
+	}
+
+	admin := router.Group("/api/v1/admin")
+	admin.Use(middleware.RequireAuth())
+	{
+		admin.GET("/reports/pending", reportHandler.GetPending)
+		admin.PATCH("/reports/:id/approve", reportHandler.Approve)
+		admin.PATCH("/reports/:id/reject", reportHandler.Reject)
 	}
 
 	// Start server
