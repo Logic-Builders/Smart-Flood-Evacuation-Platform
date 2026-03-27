@@ -40,7 +40,10 @@ const HighContrastDashboard: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+    <SafeAreaView 
+      edges={['left', 'right', 'bottom']} 
+      style={{ flex: 1, backgroundColor: '#f8fafc' }}
+    >
       {/* Top App Bar */}
       <View
         style={{
@@ -48,7 +51,7 @@ const HighContrastDashboard: React.FC = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingHorizontal: 24,
-          height: 80,
+          height: 60,
           backgroundColor: 'white',
           borderBottomWidth: 4,
           borderBottomColor: '#1E3A8A',
