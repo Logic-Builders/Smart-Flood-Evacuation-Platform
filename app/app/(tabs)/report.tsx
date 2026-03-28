@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Image,
   ScrollView, StatusBar, StyleSheet, ActivityIndicator,
-  Alert, Modal, Platform, Animated, Dimensions,
+  Alert, Modal, Platform, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,19 +14,17 @@ import MapView, {
   Marker, Polygon, UrlTile, PROVIDER_DEFAULT, MapPressEvent,
 } from 'react-native-maps';
 
-const { width } = Dimensions.get('window');
 const BASE_URL = 'http://10.10.11.136:8080';
 
-// ── Flood zone colours ────────────────────────────────────────────────────────
 const ZONE_FILL: Record<string, string> = {
-  NORMAL:  'rgba(52,168,83,0.15)',  WATCH:   'rgba(251,188,4,0.20)',
+  NORMAL: 'rgba(52,168,83,0.15)', WATCH: 'rgba(251,188,4,0.20)',
   WARNING: 'rgba(255,109,0,0.25)', EXTREME: 'rgba(234,67,53,0.32)',
 };
 const ZONE_STROKE: Record<string, string> = {
   NORMAL: '#34a853', WATCH: '#fbbc04', WARNING: '#ff6d00', EXTREME: '#ea4335',
 };
 
-type Coord     = { latitude: number; longitude: number };
+type Coord = { latitude: number; longitude: number };
 type FloodZone = {
   id: string; gauge_id: string;
   severity: 'NORMAL' | 'WATCH' | 'WARNING' | 'EXTREME';
@@ -34,42 +32,36 @@ type FloodZone = {
 };
 
 const REPORT_TYPES = [
-  { value: 'FLOODED_ROAD',   label: 'Flooded Road',   icon: 'water'         },
-  { value: 'DAMAGED_BRIDGE', label: 'Damaged Bridge', icon: 'bridge'        },
-  { value: 'BLOCKED_ROAD',   label: 'Blocked Road',   icon: 'alert-octagon' },
+  { value: 'FLOODED_ROAD',   label: 'Flooded\nRoad',   icon: 'water'         },
+  { value: 'DAMAGED_BRIDGE', label: 'Damaged\nBridge', icon: 'bridge'        },
+  { value: 'BLOCKED_ROAD',   label: 'Blocked\nRoad',   icon: 'alert-octagon' },
 ] as const;
 type ReportType = typeof REPORT_TYPES[number]['value'];
 
-const SEV_COLOR = (n: number) =>
-  ['', '#00e5a0', '#84cc16', '#f59e0b', '#f97316', '#ff3b5c'][n];
-const SEV_LABEL = ['', 'Minor', 'Low', 'Medium', 'High', 'Critical'];
-const SEV_DESC  = [
-  '',
-  'Minor puddles, road passable',
-  'Passable with care',
-  'Difficult to pass',
-  'Dangerous conditions',
-  'Completely impassable',
-];
+const SEV_COLOR  = (n: number) => ['', '#059669', '#65a30d', '#d97706', '#ea580c', '#dc2626'][n];
+const SEV_LABEL  = ['', 'Very Low', 'Low', 'Medium', 'High', 'Critical'];
+const SEV_DESC   = ['', 'Minor puddles, passable', 'Passable with care', 'Difficult to pass', 'Dangerous conditions', 'Completely impassable'];
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// ─── Light Design System ──────────────────────────────────────────────────────
 const C = {
-  bg:       '#080d14',
-  surface:  'rgba(255,255,255,0.035)',
-  border:   'rgba(0,218,243,0.10)',
-  borderHi: 'rgba(0,218,243,0.35)',
-  cyan:     '#00daf3',
-  cyanDim:  'rgba(0,218,243,0.12)',
-  cyanGlow: 'rgba(0,218,243,0.05)',
-  text:     '#e8f4ff',
-  textMid:  '#7a99b8',
-  textDim:  '#2a4a6a',
-  red:      '#ff3b5c',
-  redDim:   'rgba(255,59,92,0.12)',
+  bg:         '#EEF4FF',        // soft blue-white page bg
+  card:       'rgba(255,255,255,0.72)',
+  cardHi:     'rgba(255,255,255,0.90)',
+  border:     'rgba(30,58,138,0.10)',
+  borderHi:   'rgba(30,58,138,0.30)',
+  blue:       '#1E3A8A',
+  blueMid:    '#3B82F6',
+  blueSoft:   'rgba(59,130,246,0.12)',
+  red:        '#DC2626',
+  redSoft:    'rgba(220,38,38,0.10)',
+  text:       '#0F172A',
+  textMid:    '#475569',
+  textDim:    '#94A3B8',
+  white:      '#FFFFFF',
 };
 
 const FONT = Platform.select({ ios: 'SF Pro Display', android: 'sans-serif-medium', default: 'System' });
-const MONO = Platform.select({ ios: 'SF Mono',        android: 'monospace',         default: 'monospace' });
+const MONO = Platform.select({ ios: 'SF Mono', android: 'monospace', default: 'monospace' });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Map Picker Modal
@@ -149,34 +141,31 @@ const MapPickerModal = ({
     <Modal visible animationType="slide" transparent={false} statusBarTranslucent>
       <View style={mp.root}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-
         <SafeAreaView style={mp.header}>
           <View style={mp.headerRow}>
             <TouchableOpacity style={mp.backBtn} onPress={onClose}>
-              <Feather name="arrow-left" size={20} color="#202124" />
+              <Feather name="arrow-left" size={20} color="#1E3A8A" />
             </TouchableOpacity>
             <Text style={mp.headerTitle}>Pin Incident Location</Text>
             <TouchableOpacity style={mp.gpsBtn} onPress={useGPS}>
-              <Feather name="crosshair" size={18} color="#00b8cc" />
+              <Feather name="crosshair" size={18} color="#1E3A8A" />
             </TouchableOpacity>
           </View>
-
           <View style={mp.searchRow}>
-            <Feather name="search" size={15} color="#9aa0a6" style={{ marginRight: 8 }} />
+            <Feather name="search" size={15} color="#94A3B8" style={{ marginRight: 8 }} />
             <TextInput
               style={mp.searchInput}
-              placeholder="Search location in Sri Lanka…"
-              placeholderTextColor="#9aa0a6"
+              placeholder="Search in Sri Lanka…"
+              placeholderTextColor="#94A3B8"
               value={searchText}
               onChangeText={handleSearch}
             />
             {searchText.length > 0 && (
               <TouchableOpacity onPress={() => { setSearchText(''); setSuggestions([]); }}>
-                <Feather name="x" size={15} color="#9aa0a6" />
+                <Feather name="x" size={15} color="#94A3B8" />
               </TouchableOpacity>
             )}
           </View>
-
           {suggestions.length > 0 && (
             <View style={mp.suggBox}>
               {suggestions.map((item, idx) => (
@@ -185,7 +174,7 @@ const MapPickerModal = ({
                   style={[mp.suggRow, idx < suggestions.length - 1 && mp.suggBorder]}
                   onPress={() => pickSuggestion(item)}
                 >
-                  <Feather name="map-pin" size={13} color="#00b8cc" style={{ marginRight: 10 }} />
+                  <Feather name="map-pin" size={13} color="#3B82F6" style={{ marginRight: 10 }} />
                   <View style={{ flex: 1 }}>
                     <Text style={mp.suggMain} numberOfLines={1}>{item.display_name.split(',')[0]}</Text>
                     <Text style={mp.suggSub} numberOfLines={1}>{item.display_name.split(',').slice(1, 3).join(',').trim()}</Text>
@@ -211,15 +200,12 @@ const MapPickerModal = ({
           >
             <UrlTile urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} />
             {floodZones.map(z => (
-              <Polygon
-                key={z.id} coordinates={z.boundary.coordinates}
-                fillColor={ZONE_FILL[z.severity]} strokeColor={ZONE_STROKE[z.severity]} strokeWidth={2}
-              />
+              <Polygon key={z.id} coordinates={z.boundary.coordinates}
+                fillColor={ZONE_FILL[z.severity]} strokeColor={ZONE_STROKE[z.severity]} strokeWidth={2} />
             ))}
             {pin && (
               <Marker coordinate={pin} draggable
-                onDragEnd={e => { const c = e.nativeEvent.coordinate; setPin(c); resolveAddress(c); }}
-              >
+                onDragEnd={e => { const c = e.nativeEvent.coordinate; setPin(c); resolveAddress(c); }}>
                 <View style={mp.pinOuter}><View style={mp.pinInner} /></View>
               </Marker>
             )}
@@ -227,14 +213,14 @@ const MapPickerModal = ({
 
           {!pin && (
             <View style={mp.hint} pointerEvents="none">
-              <View style={mp.hintBubble}>
-                <Feather name="map-pin" size={13} color="#00b8cc" />
+              <BlurView intensity={60} tint="light" style={mp.hintBubble}>
+                <Feather name="map-pin" size={13} color="#3B82F6" />
                 <Text style={mp.hintText}>Tap map to place pin</Text>
-              </View>
+              </BlurView>
             </View>
           )}
 
-          <View style={mp.bottomPanel}>
+          <BlurView intensity={90} tint="light" style={mp.bottomPanel}>
             {pin ? (
               <>
                 <View style={mp.addressRow}>
@@ -243,15 +229,15 @@ const MapPickerModal = ({
                   </View>
                   <View style={{ flex: 1 }}>
                     {resolving
-                      ? <ActivityIndicator size="small" color="#00b8cc" />
+                      ? <ActivityIndicator size="small" color="#3B82F6" />
                       : <>
                           <Text style={mp.addressText} numberOfLines={2}>{address}</Text>
                           <Text style={mp.coordText}>{pin.latitude.toFixed(5)}, {pin.longitude.toFixed(5)}</Text>
                         </>
                     }
                   </View>
-                  <TouchableOpacity style={mp.changeBtn} onPress={() => { setPin(null); setAddress(''); }}>
-                    <Text style={mp.changeBtnText}>Clear</Text>
+                  <TouchableOpacity style={mp.clearBtn} onPress={() => { setPin(null); setAddress(''); }}>
+                    <Text style={mp.clearBtnText}>Clear</Text>
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity
@@ -259,22 +245,19 @@ const MapPickerModal = ({
                   onPress={() => { if (pin) { onConfirm(pin, address); onClose(); } }}
                   disabled={resolving}
                 >
-                  <LinearGradient
-                    colors={['#00daf3', '#0097a7']}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                    style={mp.confirmGrad}
-                  >
-                    <Text style={mp.confirmBtnText}>✓  Confirm This Location</Text>
+                  <LinearGradient colors={['#3B82F6', '#1E3A8A']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={mp.confirmGrad}>
+                    <Feather name="check" size={18} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={mp.confirmText}>Confirm Location</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </>
             ) : (
               <View style={mp.noPin}>
-                <Text style={mp.noPinText}>Tap anywhere on the map to mark the incident location</Text>
-                <Text style={mp.noPinSub}>You can also drag the pin after placing it</Text>
+                <Text style={mp.noPinText}>Tap anywhere on the map</Text>
+                <Text style={mp.noPinSub}>Drag the pin to fine-tune position</Text>
               </View>
             )}
-          </View>
+          </BlurView>
         </View>
       </View>
     </Modal>
@@ -282,56 +265,56 @@ const MapPickerModal = ({
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main Report Screen
+// Main Screen
 // ─────────────────────────────────────────────────────────────────────────────
 export default function FloodReportScreen() {
-  const [fullName, setFullName]       = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress]         = useState('');
   const [coord, setCoord]             = useState<Coord | null>(null);
   const [reportType, setReportType]   = useState<ReportType>('FLOODED_ROAD');
   const [severity, setSeverity]       = useState(1);
   const [description, setDescription] = useState('');
-  const [image, setImage]             = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading]         = useState(false);
   const [mapOpen, setMapOpen]         = useState(false);
   const [floodZones, setFloodZones]   = useState<FloodZone[]>([]);
 
-  const pulseAnim = useRef(new Animated.Value(0.35)).current;
-
+  const pulse = useRef(new Animated.Value(0.4)).current;
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1,    duration: 900, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 0.35, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1,   duration: 850, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.4, duration: 850, useNativeDriver: true }),
       ])
     ).start();
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    fetch(`${BASE_URL}/api/v1/flood-zones`, { signal: controller.signal })
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    fetch(`${BASE_URL}/api/v1/flood-zones`, { signal: ctrl.signal })
       .then(r => r.json())
       .then(j => { if (j.success && j.data?.zones?.length) setFloodZones(j.data.zones); })
       .catch(() => {})
       .finally(() => clearTimeout(timer));
-    return () => { controller.abort(); clearTimeout(timer); };
+    return () => { ctrl.abort(); clearTimeout(timer); };
   }, []);
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, aspect: [16, 9] as [number, number], quality: 1,
-    });
-    if (!result.canceled) setImage(result.assets[0].uri);
-  };
+const pickImage = async () => {
+  let result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsMultipleSelection: true, // ✅ important
+    quality: 1,
+  });
+
+  if (!result.canceled) {
+    const selected = result.assets.map((asset) => asset.uri);
+    setImages((prev) => [...prev, ...selected]);
+  }
+};
 
   const handleSubmit = async () => {
-    if (!fullName.trim())    return Alert.alert('Missing Field', 'Please enter your full name.');
-    if (!phoneNumber.trim()) return Alert.alert('Missing Field', 'Please enter your phone number.');
-    if (!coord)              return Alert.alert('Missing Field', 'Please pin the incident location on the map.');
-    if (!description.trim()) return Alert.alert('Missing Field', 'Please describe the hazard.');
+    if (!coord)              return Alert.alert('Missing Location', 'Please pin the incident on the map.');
+    if (!description.trim()) return Alert.alert('Missing Description', 'Please describe the hazard.');
     if (coord.latitude < 5.9 || coord.latitude > 9.9 ||
         coord.longitude < 79.6 || coord.longitude > 81.9)
       return Alert.alert('Invalid Location', 'Location must be within Sri Lanka.');
@@ -342,38 +325,42 @@ export default function FloodReportScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          latitude:       coord.latitude,
-          longitude:      coord.longitude,
-          report_type:    reportType,
+          latitude:    coord.latitude,
+          longitude:   coord.longitude,
+          report_type: reportType,
           severity,
-          description:    description.trim(),
-          reporter_name:  fullName.trim(),
-          reporter_phone: phoneNumber.trim(),
+          description: description.trim(),
         }),
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'Submission failed.');
 
-      Alert.alert('Report Submitted', 'Pending admin review. It will appear on the map once approved.');
-      setFullName(''); setPhoneNumber(''); setAddress('');
-      setCoord(null); setDescription(''); setSeverity(1);
-      setReportType('FLOODED_ROAD'); setImage(null);
+      Alert.alert('✅ Report Submitted', 'Report is pending admin review and will appear on the map once approved.');
+      setAddress(''); setCoord(null); setDescription('');
+      setSeverity(1); setReportType('FLOODED_ROAD'); setImages([]);;
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Something went wrong.');
+      Alert.alert('Submission Failed', err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <View style={s.container}>
-      <StatusBar barStyle="light-content" />
-      <LinearGradient colors={['#060b12', '#080d14', '#050910']} style={StyleSheet.absoluteFill} />
+  const sevColor = SEV_COLOR(severity);
 
-      {/* Ambient glows */}
-      <View style={[s.glow, { top: -110, left: -110, backgroundColor: 'rgba(0,218,243,0.07)' }]} />
-      <View style={[s.glow, { top: 300, right: -130, width: 290, height: 290, borderRadius: 145, backgroundColor: 'rgba(80,40,255,0.055)' }]} />
-      <View style={[s.glow, { bottom: -110, left: -70, backgroundColor: 'rgba(0,218,243,0.04)' }]} />
+  return (
+    <View style={s.root}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Light gradient background */}
+      <LinearGradient
+        colors={['#DBEAFE', '#EEF4FF', '#F0F9FF']}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Soft ambient blobs */}
+      <View style={[s.blob, { top: -80, left: -80,  width: 300, height: 300, backgroundColor: 'rgba(59,130,246,0.10)' }]} />
+      <View style={[s.blob, { top: 300, right: -100, width: 260, height: 260, backgroundColor: 'rgba(99,102,241,0.07)' }]} />
+      <View style={[s.blob, { bottom: -80, left: -60, width: 280, height: 280, backgroundColor: 'rgba(14,165,233,0.08)' }]} />
 
       <MapPickerModal
         visible={mapOpen} onClose={() => setMapOpen(false)}
@@ -381,20 +368,27 @@ export default function FloodReportScreen() {
         initialCoord={coord} floodZones={floodZones}
       />
 
-      <SafeAreaView style={s.safeArea}>
+      <SafeAreaView style={s.safe}>
 
-        {/* ── Header ── */}
-        <View style={s.header}>
-          <View>
-            <View style={s.eyebrowRow}>
-              <Animated.View style={[s.liveDot, { opacity: pulseAnim }]} />
-              <Text style={s.eyebrow}>EMERGENCY · LIVE</Text>
+        {/* ── TOP BAR ── */}
+        <View style={s.topBar}>
+          <View style={s.topBarLeft}>
+            <View style={s.livePill}>
+              <Animated.View style={[s.liveDot, { opacity: pulse }]} />
+              <Text style={s.livePillText}>LIVE</Text>
             </View>
-            <Text style={s.headerTitle}>Flood Report</Text>
+            <Text style={s.topBarSub}>Emergency Dispatch Active</Text>
           </View>
-          <LinearGradient colors={[C.cyanDim, C.cyanGlow]} style={s.headerIcon}>
-            <Feather name="alert-triangle" size={20} color={C.cyan} />
-          </LinearGradient>
+          <View style={s.sosChip}>
+            <Feather name="alert-triangle" size={14} color={C.red} />
+          </View>
+        </View>
+
+        {/* ── HERO TITLE ── */}
+        <View style={s.heroWrap}>
+          <Text style={s.heroLabel}>HAZARD REPORT</Text>
+          <Text style={s.heroTitle}>Flood Report</Text>
+          <Text style={s.heroSub}>Fill all fields accurately. Reports are reviewed before going live.</Text>
         </View>
 
         <ScrollView
@@ -403,175 +397,229 @@ export default function FloodReportScreen() {
           keyboardShouldPersistTaps="handled"
         >
 
-          {/* ── Reporter Info ── */}
-          <Text style={s.sectionLabel}>REPORTER INFO</Text>
-          <BlurView intensity={14} tint="dark" style={s.card}>
-            <View style={s.inputRow}>
-              <View style={s.iconBox}><Feather name="user" size={16} color={C.cyan} /></View>
-              <TextInput
-                style={s.input} placeholder="Full Name"
-                placeholderTextColor={C.textDim} value={fullName} onChangeText={setFullName}
-              />
-            </View>
-            <View style={s.cardDivider} />
-            <View style={s.inputRow}>
-              <View style={s.iconBox}><Feather name="phone" size={16} color={C.cyan} /></View>
-              <TextInput
-                style={s.input} placeholder="Phone Number"
-                placeholderTextColor={C.textDim} keyboardType="phone-pad"
-                value={phoneNumber} onChangeText={setPhoneNumber}
-              />
-            </View>
-          </BlurView>
+          {/* ══ LOCATION ══ */}
+          <View style={s.sectionHeader}>
+            <View style={s.sectionDot} />
+            <Text style={s.sectionLabel}>INCIDENT LOCATION</Text>
+          </View>
 
-          {/* ── Incident Location ── */}
-          <Text style={s.sectionLabel}>INCIDENT LOCATION</Text>
           <TouchableOpacity onPress={() => setMapOpen(true)} activeOpacity={0.8}>
-            <BlurView intensity={14} tint="dark" style={s.locationCard}>
+            <BlurView intensity={55} tint="light" style={[s.glassCard, coord && s.glassCardActive]}>
               {coord ? (
-                <View style={s.locationFilled}>
-                  <View style={s.locationPinBox}>
-                    <Feather name="map-pin" size={18} color={C.red} />
+                <View style={s.locFilled}>
+                  <View style={s.locPinBg}>
+                    <Feather name="map-pin" size={20} color={C.red} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.locationAddr} numberOfLines={2}>{address}</Text>
-                    <Text style={s.locationCoord}>{coord.latitude.toFixed(5)}, {coord.longitude.toFixed(5)}</Text>
+                    <Text style={s.locAddr} numberOfLines={2}>{address}</Text>
+                    <Text style={s.locCoord}>{coord.latitude.toFixed(5)}, {coord.longitude.toFixed(5)}</Text>
                   </View>
-                  <View style={s.editChip}>
-                    <Feather name="edit-2" size={12} color={C.cyan} />
-                    <Text style={s.editChipText}>Edit</Text>
+                  <View style={s.editPill}>
+                    <Feather name="edit-2" size={11} color={C.blue} />
+                    <Text style={s.editPillText}>EDIT</Text>
                   </View>
                 </View>
               ) : (
-                <View style={s.locationEmpty}>
-                  <LinearGradient colors={[C.cyanDim, C.cyanGlow]} style={s.mapIconBox}>
-                    <Feather name="map" size={24} color={C.cyan} />
-                  </LinearGradient>
+                <View style={s.locEmpty}>
+                  <BlurView intensity={40} tint="light" style={s.locIconBox}>
+                    <Feather name="map" size={22} color={C.blueMid} />
+                  </BlurView>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.locationEmptyTitle}>Pin on Map</Text>
-                    <Text style={s.locationEmptySub}>Search, tap map, or use GPS</Text>
+                    <Text style={s.locEmptyTitle}>Tap to pin on map</Text>
+                    <Text style={s.locEmptySub}>Search, tap or use GPS</Text>
                   </View>
-                  <Feather name="chevron-right" size={16} color={C.textMid} />
+                  <View style={s.locArrow}>
+                    <Feather name="arrow-right" size={16} color={C.blueMid} />
+                  </View>
                 </View>
               )}
             </BlurView>
           </TouchableOpacity>
 
-          {/* ── Incident Type ── */}
-          <Text style={s.sectionLabel}>INCIDENT TYPE</Text>
-          <View style={s.typeRow}>
+          {/* ══ INCIDENT TYPE ══ */}
+          <View style={s.sectionHeader}>
+            <View style={s.sectionDot} />
+            <Text style={s.sectionLabel}>INCIDENT TYPE</Text>
+          </View>
+
+          <View style={s.typeGrid}>
             {REPORT_TYPES.map(t => {
               const active = reportType === t.value;
               return (
                 <TouchableOpacity
                   key={t.value}
-                  style={[s.typeChip, active && s.typeChipActive]}
                   onPress={() => setReportType(t.value)}
                   activeOpacity={0.75}
+                  style={s.typeChipWrap}
                 >
-                  {active && (
-                    <LinearGradient
-                      colors={[C.cyanDim, C.cyanGlow]}
-                      style={[StyleSheet.absoluteFill, { borderRadius: 18 }]}
-                    />
-                  )}
-                  <MaterialCommunityIcons
-                    name={t.icon as any} size={21}
-                    color={active ? C.cyan : C.textMid}
-                  />
-                  <Text style={[s.typeChipText, active && s.typeChipTextActive]}>{t.label}</Text>
+                  <BlurView intensity={55} tint="light" style={[s.typeChip, active && s.typeChipActive]}>
+                    {active && (
+                      <LinearGradient
+                        colors={['rgba(59,130,246,0.14)', 'rgba(59,130,246,0.03)']}
+                        style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+                      />
+                    )}
+                    <View style={[s.typeIconBox, active && s.typeIconBoxActive]}>
+                      <MaterialCommunityIcons
+                        name={t.icon as any} size={22}
+                        color={active ? C.blue : C.textMid}
+                      />
+                    </View>
+                    <Text style={[s.typeLabel, active && s.typeLabelActive]}>{t.label}</Text>
+                    {active && <View style={s.typeActiveDot} />}
+                  </BlurView>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          {/* ── Severity ── */}
+          {/* ══ SEVERITY ══ */}
           <View style={s.sevHeaderRow}>
-            <Text style={s.sectionLabel}>SEVERITY LEVEL</Text>
-            <View style={[s.sevBadge, { backgroundColor: SEV_COLOR(severity) + '20' }]}>
-              <Text style={[s.sevBadgeText, { color: SEV_COLOR(severity) }]}>
-                {SEV_LABEL[severity].toUpperCase()}
-              </Text>
+            <View style={s.sectionHeader}>
+              <View style={s.sectionDot} />
+              <Text style={s.sectionLabel}>SEVERITY LEVEL</Text>
+            </View>
+            <View style={[s.sevBadge, { borderColor: sevColor + '55', backgroundColor: sevColor + '18' }]}>
+              <Text style={[s.sevBadgeText, { color: sevColor }]}>{SEV_LABEL[severity]}</Text>
             </View>
           </View>
-          <BlurView intensity={14} tint="dark" style={s.card}>
-            <View style={s.sevBarsRow}>
+
+          <BlurView intensity={55} tint="light" style={s.glassCard}>
+            <View style={s.sevTop}>
+              <View style={[s.sevNumBox, { borderColor: sevColor + '70', backgroundColor: sevColor + '15' }]}>
+                <Text style={[s.sevNum, { color: sevColor }]}>{severity}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.sevDescText}>{SEV_DESC[severity]}</Text>
+                <Text style={s.sevScaleHint}>Scale: 1 (minor) → 5 (critical)</Text>
+              </View>
+            </View>
+            <View style={s.sevBars}>
               {[1, 2, 3, 4, 5].map(n => (
-                <TouchableOpacity key={n} onPress={() => setSeverity(n)} style={{ flex: 1 }}>
-                  <View style={[s.sevBar, {
-                    backgroundColor:  severity >= n ? SEV_COLOR(severity) : 'rgba(255,255,255,0.06)',
-                    height:           severity >= n ? 14 : 7,
-                    marginTop:        severity >= n ? 0 : 3.5,
-                    shadowColor:      severity >= n ? SEV_COLOR(severity) : 'transparent',
-                    shadowOffset:     { width: 0, height: 0 },
-                    shadowOpacity:    0.9,
-                    shadowRadius:     7,
-                    elevation:        severity >= n ? 5 : 0,
-                  }]} />
+                <TouchableOpacity key={n} onPress={() => setSeverity(n)} style={{ flex: 1, paddingHorizontal: 3 }}>
+                  <View style={{
+                    height: severity === n ? 40 : severity > n ? 30 : 22,
+                    borderRadius: 8,
+                    backgroundColor: n <= severity ? SEV_COLOR(n) : 'rgba(30,58,138,0.08)',
+                    borderWidth: severity === n ? 1.5 : 0,
+                    borderColor: SEV_COLOR(n) + 'aa',
+                    shadowColor: n <= severity ? SEV_COLOR(n) : 'transparent',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.5, shadowRadius: 6,
+                    elevation: n <= severity ? 3 : 0,
+                    alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 4,
+                  }}>
+                    {severity === n && <Text style={s.sevBarLabel}>{n}</Text>}
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={s.sevDesc}>{SEV_DESC[severity]}</Text>
           </BlurView>
 
-          {/* ── Description ── */}
-          <Text style={s.sectionLabel}>DESCRIPTION</Text>
-          <BlurView intensity={14} tint="dark" style={[s.card, { padding: 0 }]}>
+          {/* ══ DESCRIPTION ══ */}
+          <View style={s.sectionHeader}>
+            <View style={s.sectionDot} />
+            <Text style={s.sectionLabel}>DESCRIPTION</Text>
+          </View>
+
+          <BlurView intensity={55} tint="light" style={[s.glassCard, { padding: 0 }]}>
             <TextInput
               style={s.textArea}
-              placeholder="Describe the hazard — water level, road condition, visibility…"
+              placeholder={'Describe the hazard…\nWater depth, road condition, visibility, trapped vehicles'}
               placeholderTextColor={C.textDim}
-              multiline numberOfLines={4}
-              value={description} onChangeText={setDescription}
+              multiline
+              numberOfLines={5}
+              value={description}
+              onChangeText={setDescription}
               textAlignVertical="top"
             />
+            <View style={s.descFooter}>
+              <Text style={s.charCount}>{description.length} chars</Text>
+            </View>
           </BlurView>
 
-          {/* ── Photo ── */}
-          <View style={s.photoHeader}>
-            <Text style={s.sectionLabel}>PHOTO EVIDENCE</Text>
-            <Text style={s.optionalTag}>OPTIONAL</Text>
+          {/* ══ PHOTO ══ */}
+          <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={s.sectionDot} />
+              <Text style={s.sectionLabel}>PHOTO EVIDENCE</Text>
+            </View>
+            <Text style={s.optTag}>OPTIONAL</Text>
           </View>
-          {image ? (
-            <View style={s.previewWrap}>
-              <Image source={{ uri: image }} style={s.previewImg} />
-              <TouchableOpacity style={s.removeBtn} onPress={() => setImage(null)}>
-                <Feather name="x" size={13} color="#fff" />
-              </TouchableOpacity>
+
+          {images.length > 0 ? (
+            <View style={s.imgContainer}>
+              {images.map((img, index) => (
+                <View key={index} style={s.imgWrap}>
+                  <Image source={{ uri: img }} style={s.imgPreview} />
+
+                  <LinearGradient
+                    colors={['transparent', 'rgba(15,23,42,0.5)']}
+                    style={s.imgOverlay}
+                  />
+
+                  <TouchableOpacity
+                    style={s.imgRemove}
+                    onPress={() =>
+                      setImages(images.filter((_, i) => i !== index))
+                    }
+                  >
+                    <BlurView intensity={60} tint="light" style={s.imgRemoveBlur}>
+                      <Feather name="x" size={14} color={C.text} />
+                    </BlurView>
+                  </TouchableOpacity>
+
+                  <View style={s.imgLabel}>
+                    <Feather name="check-circle" size={13} color={C.white} />
+                    <Text style={s.imgLabelText}>Photo attached</Text>
+                  </View>
+                </View>
+              ))}
             </View>
           ) : (
-            <TouchableOpacity style={s.uploadBox} onPress={pickImage} activeOpacity={0.75}>
-              <LinearGradient colors={[C.cyanDim, C.cyanGlow]} style={s.uploadCircle}>
-                <MaterialCommunityIcons name="camera-plus-outline" size={26} color={C.cyan} />
-              </LinearGradient>
-              <Text style={s.uploadTitle}>Attach Photo Evidence</Text>
-              <Text style={s.uploadSub}>Tap to pick from gallery</Text>
+            <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
+              <BlurView intensity={55} tint="light" style={s.uploadBox}>
+                <View style={s.uploadIconCircle}>
+                  <MaterialCommunityIcons
+                    name="camera-plus-outline"
+                    size={28}
+                    color={C.blueMid}
+                  />
+                </View>
+                <Text style={s.uploadTitle}>Attach Photos</Text>
+                <Text style={s.uploadSub}>
+                  You can upload multiple images
+                </Text>
+              </BlurView>
             </TouchableOpacity>
           )}
 
-          {/* ── Submit ── */}
+          {/* ══ SUBMIT ══ */}
           <TouchableOpacity
-            style={[s.submitBtn, loading && { opacity: 0.6 }]}
-            onPress={handleSubmit} disabled={loading} activeOpacity={0.85}
+            style={[s.submitWrap, loading && { opacity: 0.55 }]}
+            onPress={handleSubmit}
+            disabled={loading}
+            activeOpacity={0.85}
           >
             <LinearGradient
-              colors={['#00daf3', '#0097a7']}
+              colors={['#3B82F6', '#1E3A8A']}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={s.submitGrad}
             >
-              {loading
-                ? <ActivityIndicator color={C.bg} />
-                : <>
-                    <Text style={s.submitText}>SUBMIT EMERGENCY REPORT</Text>
-                    <Feather name="send" size={17} color={C.bg} style={{ marginLeft: 10 }} />
-                  </>
-              }
+              {loading ? (
+                <ActivityIndicator color={C.white} size="small" />
+              ) : (
+                <>
+                  <Feather name="send" size={18} color={C.white} style={{ marginRight: 10 }} />
+                  <Text style={s.submitText}>SUBMIT EMERGENCY REPORT</Text>
+                </>
+              )}
             </LinearGradient>
           </TouchableOpacity>
 
-          <View style={s.footer}>
-            <Feather name="shield" size={11} color={C.textDim} />
-            <Text style={s.footerText}>ENCRYPTED · PENDING REVIEW · EXPIRES IN 3 HRS</Text>
+          <View style={s.footerRow}>
+            <Feather name="lock" size={11} color={C.textDim} />
+            <Text style={s.footerText}>ENCRYPTED  ·  PENDING REVIEW  ·  AUTO-EXPIRES IN 3 HRS</Text>
           </View>
 
         </ScrollView>
@@ -581,136 +629,139 @@ export default function FloodReportScreen() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Styles — Main Screen
+// Styles
 // ─────────────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  container:  { flex: 1 },
-  safeArea:   { flex: 1 },
-  glow:       { position: 'absolute', width: 340, height: 340, borderRadius: 170 },
+  root: { flex: 1 },
+  safe: { flex: 1 },
+  blob: { position: 'absolute', borderRadius: 999 },
 
-  // Header
-  header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 8, paddingBottom: 20 },
-  eyebrowRow:     { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 5 },
-  liveDot:        { width: 7, height: 7, borderRadius: 4, backgroundColor: C.cyan },
-  eyebrow:        { fontSize: 10, fontFamily: FONT, fontWeight: '700', color: C.cyan, letterSpacing: 2.5 },
-  headerTitle:    { fontSize: 34, fontFamily: FONT, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
-  headerIcon:     { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border },
+  // Top bar
+  topBar:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22, paddingTop: 0, paddingBottom: 9 },
+  topBarLeft:   { gap: 4 },
+  livePill:     { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: 'rgba(30,58,138,0.08)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(30,58,138,0.18)', alignSelf: 'flex-start' },
+  liveDot:      { width: 7, height: 7, borderRadius: 4, backgroundColor: '#3B82F6' },
+  livePillText: { color: C.blue, fontSize: 10, fontFamily: FONT, fontWeight: '800', letterSpacing: 2.5 },
+  topBarSub:    { color: C.textMid, fontSize: 11, fontFamily: FONT, marginLeft: 2 },
+  sosChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: 'rgba(220,38,38,0.08)', borderWidth: 1, borderColor: 'rgba(220,38,38,0.20)' },
 
-  scroll:         { paddingHorizontal: 20, paddingBottom: 50 },
+  // Hero
+  heroWrap:  { paddingHorizontal: 22, paddingBottom: 20, paddingTop: 2 },
+  heroLabel: { fontSize: 10, fontFamily: FONT, fontWeight: '700', color: C.blueMid, letterSpacing: 4, opacity: 0.8, marginBottom: 5 },
+  heroTitle: { fontSize: 35, fontFamily: FONT, fontWeight: '800', color: C.blue, letterSpacing: -1.5, lineHeight: 40 },
+  heroSub:   { fontSize: 11, fontFamily: FONT, color: C.textMid, marginTop: 10, lineHeight: 15 },
 
-  // Section labels
-  sectionLabel:   { fontSize: 10, fontFamily: FONT, fontWeight: '700', color: C.cyan, letterSpacing: 3, marginTop: 30, marginBottom: 12, opacity: 0.85 },
+  scroll: { paddingHorizontal: 18, paddingBottom: 54 },
 
-  // Glass card base
-  card:           {
-    borderRadius: 22, borderWidth: 1, borderColor: C.border,
-    backgroundColor: C.surface, overflow: 'hidden', padding: 4,
-  },
-  cardDivider:    { height: 1, backgroundColor: 'rgba(255,255,255,0.04)', marginHorizontal: 16 },
+  // Sections
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 28, marginBottom: 12 },
+  sectionDot:    { width: 4, height: 4, borderRadius: 2, backgroundColor: C.blueMid },
+  sectionLabel:  { fontSize: 10, fontFamily: FONT, fontWeight: '700', color: C.blue, letterSpacing: 3 },
 
-  // Inputs
-  inputRow:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 58 },
-  iconBox:        { width: 34, height: 34, borderRadius: 11, backgroundColor: C.cyanDim, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  input:          { flex: 1, color: C.text, fontSize: 15, fontFamily: FONT, fontWeight: '500', letterSpacing: 0.1 },
+  // Glass card
+  glassCard:       { borderRadius: 22, borderWidth: 1, borderColor: C.border, overflow: 'hidden', padding: 6, backgroundColor: C.card },
+  glassCardActive: { borderColor: 'rgba(220,38,38,0.30)' },
 
-  // Location card
-  locationCard:   { borderRadius: 22, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, overflow: 'hidden' },
-  locationFilled: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 13 },
-  locationPinBox: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.redDim, alignItems: 'center', justifyContent: 'center' },
-  locationAddr:   { color: C.text,    fontSize: 14, fontFamily: FONT, fontWeight: '600', lineHeight: 20 },
-  locationCoord:  { color: C.textDim, fontSize: 11, marginTop: 3, fontFamily: MONO },
-  editChip:       { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.cyanDim, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 12, borderWidth: 1, borderColor: C.borderHi },
-  editChipText:   { color: C.cyan, fontSize: 11, fontFamily: FONT, fontWeight: '700' },
-  locationEmpty:  { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 15 },
-  mapIconBox:     { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border },
-  locationEmptyTitle: { color: C.textMid, fontSize: 14, fontFamily: FONT, fontWeight: '700' },
-  locationEmptySub:   { color: C.textDim,  fontSize: 12, fontFamily: FONT, marginTop: 3 },
+  // Location
+  locFilled:     { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 13 },
+  locPinBg:      { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(220,38,38,0.10)', alignItems: 'center', justifyContent: 'center' },
+  locAddr:       { color: C.text,    fontSize: 14, fontFamily: FONT, fontWeight: '600', lineHeight: 20 },
+  locCoord:      { color: C.textDim, fontSize: 11, marginTop: 3, fontFamily: MONO },
+  editPill:      { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.blueSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(30,58,138,0.20)' },
+  editPillText:  { color: C.blue, fontSize: 10, fontFamily: FONT, fontWeight: '800', letterSpacing: 0.5 },
+  locEmpty:      { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 15 },
+  locIconBox:    { width: 52, height: 52, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border },
+  locEmptyTitle: { color: C.text,    fontSize: 15, fontFamily: FONT, fontWeight: '700' },
+  locEmptySub:   { color: C.textMid, fontSize: 12, fontFamily: FONT, marginTop: 3 },
+  locArrow:      { width: 34, height: 34, borderRadius: 17, backgroundColor: C.blueSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)' },
 
-  // Type chips
-  typeRow:            { flexDirection: 'row', gap: 9 },
-  typeChip:           {
-    flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8,
-    paddingVertical: 18, borderRadius: 18, overflow: 'hidden',
-    backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
-  },
-  typeChipActive:     { borderColor: C.cyan },
-  typeChipText:       { fontSize: 10, fontFamily: FONT, fontWeight: '700', color: C.textMid, textAlign: 'center', letterSpacing: 0.3 },
-  typeChipTextActive: { color: C.cyan },
+  // Type grid
+  typeGrid:         { flexDirection: 'row', gap: 10 },
+  typeChipWrap:     { flex: 1 },
+  typeChip:         { borderRadius: 20, borderWidth: 1, borderColor: C.border, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, paddingHorizontal: 6, gap: 8, backgroundColor: C.card },
+  typeChipActive:   { borderColor: 'rgba(30,58,138,0.35)' },
+  typeIconBox:      { width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(30,58,138,0.06)', alignItems: 'center', justifyContent: 'center' },
+  typeIconBoxActive:{ backgroundColor: C.blueSoft },
+  typeLabel:        { fontSize: 11, fontFamily: FONT, fontWeight: '700', color: C.textMid, textAlign: 'center', lineHeight: 15 },
+  typeLabelActive:  { color: C.blue },
+  typeActiveDot:    { width: 5, height: 5, borderRadius: 3, backgroundColor: C.blueMid },
 
   // Severity
-  sevHeaderRow:   { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  sevBadge:       { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 12 },
-  sevBadgeText:   { fontSize: 10, fontFamily: FONT, fontWeight: '800', letterSpacing: 1.5 },
-  sevBarsRow:     { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4, gap: 6, alignItems: 'flex-end' },
-  sevBar:         { borderRadius: 6 },
-  sevDesc:        { color: C.textMid, fontSize: 12, fontFamily: FONT, paddingHorizontal: 16, paddingBottom: 16, marginTop: 10, letterSpacing: 0.1 },
+  sevHeaderRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sevBadge:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12, borderWidth: 1, marginBottom: 12 },
+  sevBadgeText:  { fontSize: 11, fontFamily: FONT, fontWeight: '800', letterSpacing: 1 },
+  sevTop:        { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, paddingBottom: 10 },
+  sevNumBox:     { width: 48, height: 48, borderRadius: 16, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  sevNum:        { fontSize: 22, fontFamily: FONT, fontWeight: '900' },
+  sevDescText:   { color: C.text,    fontSize: 13, fontFamily: FONT, fontWeight: '600', lineHeight: 18 },
+  sevScaleHint:  { color: C.textMid, fontSize: 11, fontFamily: FONT, marginTop: 3 },
+  sevBars:       { flexDirection: 'row', paddingHorizontal: 14, paddingBottom: 16, paddingTop: 6, alignItems: 'flex-end' },
+  sevBarLabel:   { color: 'rgba(255,255,255,0.9)', fontSize: 10, fontFamily: FONT, fontWeight: '800' },
 
-  // Text area
-  textArea:       { color: C.text, fontSize: 15, fontFamily: FONT, padding: 18, minHeight: 115, lineHeight: 24 },
+  // Description
+  textArea:   { color: C.text, fontSize: 15, fontFamily: FONT, padding: 18, minHeight: 120, lineHeight: 24 },
+  descFooter: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingBottom: 10 },
+  charCount:  { color: C.textDim, fontSize: 11, fontFamily: MONO },
 
   // Photo
-  photoHeader:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  optionalTag:    { fontSize: 9, fontFamily: FONT, fontWeight: '700', color: C.textDim, letterSpacing: 2, marginBottom: 12 },
-  uploadBox:      {
-    borderRadius: 22, borderWidth: 1, borderStyle: 'dashed',
-    borderColor: 'rgba(0,218,243,0.22)',
-    backgroundColor: 'rgba(0,218,243,0.02)',
-    alignItems: 'center', paddingVertical: 36, gap: 7,
-  },
-  uploadCircle:   { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  uploadTitle:    { color: C.textMid, fontSize: 13, fontFamily: FONT, fontWeight: '700' },
-  uploadSub:      { color: C.textDim,  fontSize: 12, fontFamily: FONT },
-  previewWrap:    { position: 'relative' },
-  previewImg:     { width: '100%', height: 195, borderRadius: 22 },
-  removeBtn:      { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.65)', padding: 8, borderRadius: 12 },
+  optTag:        { fontSize: 9, fontFamily: FONT, fontWeight: '700', color: C.textDim, letterSpacing: 2, marginBottom: 12 },
+  imgWrap: { width: 100, height: 100, borderRadius: 12, overflow: 'hidden', marginBottom: 10,},
+  imgPreview:    { width: '100%', height: 200, borderRadius: 22 },
+  imgOverlay:    { position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, borderBottomLeftRadius: 22, borderBottomRightRadius: 22 },
+  imgRemove:     { position: 'absolute', top: 12, right: 12 },
+  imgRemoveBlur: { width: 34, height: 34, borderRadius: 17, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  imgLabel:      { position: 'absolute', bottom: 12, left: 14, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  imgLabelText:  { color: C.white, fontSize: 12, fontFamily: FONT, fontWeight: '700' },
+  uploadBox:     { borderRadius: 22, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(59,130,246,0.30)', overflow: 'hidden', alignItems: 'center', paddingVertical: 38, gap: 8, backgroundColor: C.card },
+  uploadIconCircle:{ width: 64, height: 64, borderRadius: 32, backgroundColor: C.blueSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  uploadTitle:   { color: C.text,    fontSize: 14, fontFamily: FONT, fontWeight: '700' },
+  uploadSub:     { color: C.textMid, fontSize: 12, fontFamily: FONT },
+  imgContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10,},
+
 
   // Submit
-  submitBtn:      {
-    marginTop: 34, borderRadius: 22, overflow: 'hidden',
-    shadowColor: C.cyan, shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45, shadowRadius: 22, elevation: 14,
-  },
-  submitGrad:     { height: 62, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  submitText:     { color: C.bg, fontSize: 14, fontFamily: FONT, fontWeight: '900', letterSpacing: 1.5 },
+  submitWrap: { marginTop: 36, borderRadius: 24, overflow: 'hidden', shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 10 },
+  submitGrad: { height: 66, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  submitText: { color: C.white, fontSize: 14, fontFamily: FONT, fontWeight: '900', letterSpacing: 2 },
 
   // Footer
-  footer:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 20, gap: 7 },
-  footerText:     { fontSize: 10, fontFamily: FONT, fontWeight: '700', color: C.textDim, letterSpacing: 1.5 },
+  footerRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 20, gap: 7 },
+  footerText: { fontSize: 9.5, fontFamily: FONT, fontWeight: '700', color: C.textDim, letterSpacing: 1.5 },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Styles — Map Picker Modal
+// Map Modal Styles
 // ─────────────────────────────────────────────────────────────────────────────
 const mp = StyleSheet.create({
   root:          { flex: 1, backgroundColor: '#fff' },
   header:        { backgroundColor: '#fff', paddingHorizontal: 16, paddingBottom: 10, zIndex: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 4 },
   headerRow:     { flexDirection: 'row', alignItems: 'center', paddingBottom: 12 },
-  backBtn:       { width: 38, height: 38, borderRadius: 19, backgroundColor: '#f1f3f4', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  headerTitle:   { flex: 1, fontSize: 17, fontFamily: FONT, fontWeight: '800', color: '#202124' },
-  gpsBtn:        { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,184,204,0.10)', alignItems: 'center', justifyContent: 'center' },
-  searchRow:     { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f3f4', borderRadius: 13, paddingHorizontal: 12, height: 44 },
-  searchInput:   { flex: 1, color: '#202124', fontSize: 14, fontFamily: FONT },
-  suggBox:       { backgroundColor: '#fff', borderRadius: 13, marginTop: 6, borderWidth: 1, borderColor: '#f1f3f4', overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 4 },
+  backBtn:       { width: 38, height: 38, borderRadius: 19, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  headerTitle:   { flex: 1, fontSize: 17, fontFamily: FONT, fontWeight: '800', color: C.blue },
+  gpsBtn:        { width: 38, height: 38, borderRadius: 19, backgroundColor: C.blueSoft, alignItems: 'center', justifyContent: 'center' },
+  searchRow:     { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 13, paddingHorizontal: 12, height: 44 },
+  searchInput:   { flex: 1, color: C.text, fontSize: 14, fontFamily: FONT },
+  suggBox:       { backgroundColor: '#fff', borderRadius: 13, marginTop: 6, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 4 },
   suggRow:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12 },
-  suggBorder:    { borderBottomWidth: 1, borderBottomColor: '#f1f3f4' },
-  suggMain:      { fontSize: 13, fontFamily: FONT, fontWeight: '600', color: '#202124' },
-  suggSub:       { fontSize: 11, fontFamily: FONT, color: '#9aa0a6', marginTop: 1 },
-  pinOuter:      { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,59,92,0.15)', alignItems: 'center', justifyContent: 'center' },
-  pinInner:      { width: 14, height: 14, borderRadius: 7, backgroundColor: '#ff3b5c', borderWidth: 2.5, borderColor: '#fff' },
-  hint:          { position: 'absolute', top: 20, left: 0, right: 0, alignItems: 'center' },
-  hintBubble:    { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 9, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 4 },
-  hintText:      { fontSize: 13, fontFamily: FONT, color: '#202124', fontWeight: '600' },
-  bottomPanel:   { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, paddingBottom: Platform.OS === 'ios' ? 40 : 26, shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.1, shadowRadius: 14, elevation: 18 },
+  suggBorder:    { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  suggMain:      { fontSize: 13, fontFamily: FONT, fontWeight: '600', color: C.text },
+  suggSub:       { fontSize: 11, fontFamily: FONT, color: C.textDim, marginTop: 1 },
+  pinOuter:      { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(220,38,38,0.15)', alignItems: 'center', justifyContent: 'center' },
+  pinInner:      { width: 14, height: 14, borderRadius: 7, backgroundColor: C.red, borderWidth: 2.5, borderColor: '#fff' },
+  hint:          { position: 'absolute', top: 24, left: 0, right: 0, alignItems: 'center' },
+  hintBubble:    { flexDirection: 'row', alignItems: 'center', gap: 6, overflow: 'hidden', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10 },
+  hintText:      { fontSize: 13, fontFamily: FONT, color: C.text, fontWeight: '700' },
+  bottomPanel:   { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 22, paddingBottom: Platform.OS === 'ios' ? 42 : 28, overflow: 'hidden' },
   addressRow:    { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 },
-  addressIcon:   { width: 38, height: 38, borderRadius: 19, backgroundColor: '#fff0f3', alignItems: 'center', justifyContent: 'center' },
-  addressText:   { fontSize: 14, fontFamily: FONT, fontWeight: '600', color: '#202124', lineHeight: 20 },
-  coordText:     { fontSize: 11, color: '#9aa0a6', marginTop: 2, fontFamily: MONO },
-  changeBtn:     { paddingHorizontal: 13, paddingVertical: 8, backgroundColor: '#f1f3f4', borderRadius: 12 },
-  changeBtnText: { fontSize: 12, fontFamily: FONT, fontWeight: '700', color: '#5f6368' },
+  addressIcon:   { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(220,38,38,0.08)', alignItems: 'center', justifyContent: 'center' },
+  addressText:   { fontSize: 14, fontFamily: FONT, fontWeight: '600', color: C.text, lineHeight: 20 },
+  coordText:     { fontSize: 11, color: C.textDim, marginTop: 2, fontFamily: MONO },
+  clearBtn:      { paddingHorizontal: 13, paddingVertical: 8, backgroundColor: '#F1F5F9', borderRadius: 12 },
+  clearBtnText:  { fontSize: 12, fontFamily: FONT, fontWeight: '700', color: C.textMid },
   confirmBtn:    { borderRadius: 18, overflow: 'hidden' },
-  confirmGrad:   { paddingVertical: 18, alignItems: 'center' },
-  confirmBtnText:{ color: '#060b12', fontSize: 15, fontFamily: FONT, fontWeight: '900', letterSpacing: 0.5 },
-  noPin:         { alignItems: 'center', paddingVertical: 10, gap: 5 },
-  noPinText:     { fontSize: 14, fontFamily: FONT, color: '#202124', fontWeight: '600', textAlign: 'center' },
-  noPinSub:      { fontSize: 12, fontFamily: FONT, color: '#9aa0a6', textAlign: 'center' },
+  confirmGrad:   { paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  confirmText:   { color: '#fff', fontSize: 15, fontFamily: FONT, fontWeight: '900', letterSpacing: 0.5 },
+  noPin:         { alignItems: 'center', paddingVertical: 12, gap: 6 },
+  noPinText:     { fontSize: 15, fontFamily: FONT, color: C.text, fontWeight: '700', textAlign: 'center' },
+  noPinSub:      { fontSize: 12, fontFamily: FONT, color: C.textDim, textAlign: 'center' },
 });
