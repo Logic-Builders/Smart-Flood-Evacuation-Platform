@@ -29,44 +29,40 @@ func main() {
 	reportService := reports.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
 
-	// Create router
+	authHandler := handlers.NewAuthHandler()
+
+	floodAdapter := external.NewMockFloodAdaptor()
+	routingService := routing.NewRoutingService(floodAdaptor)
+	routeHandler := handlers.NewRouteHandler(routingService)
+
+	//router
 	router := gin.Default()
 
-	// Health check endpoint — just to confirm server is running
-	router.GET("/health", func(c *gin.Context) {
+	//public routes
+	router.FET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":  "ok",
 			"message": "Flood Evacuation API is running",
 		})
 	})
+	router.POST("/auth/login", authHandler.Login)
 
-	//API routes
 	v1 := router.Group("/api/v1")
 	{
-		//public report repositories
 		v1.POST("/reports", reportHandler.Submit)
 		v1.GET("/reports/active", reportHandler.GetActive)
-
-		//Admin report endpoints
-
-		authHandler := handlers.NewAuthHandler()
-		router.POST("/auth/login", authHandler.Login)
+		v1.GET("/route", routeHandler.GetRoute)
 	}
 
+	// admin routes - protected
 	admin := v1.Group("/admin")
-	admin.Use(middleware.RequireAuth())
+	admin.Use(middleware.RequiredAuth())
 	{
 		admin.GET("/reports/pending", reportHandler.GetPending)
 		admin.PATCH("/reports/:id/approve", reportHandler.Approve)
 		admin.PATCH("/reports/:id/reject", reportHandler.Reject)
 	}
 
-	floodAdapter := external.NewMockFloodAdaptor()
-	routingService := routing.NewRoutingService(floodAdapter)
-	routeHandler := handlers.NewRouteHandler(routingService)
-	router.GET("/api/v1/route", routeHandler.GetRoute)
-
-	// Start server
 	log.Printf("Server starting on port %s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
