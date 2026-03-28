@@ -47,7 +47,7 @@ type RouteOption = {
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BASE_URL      = "http://10.10.11.136:8080";
+const BASE_URL      = "http://localhost:8080";
 const GOOGLE_BLUE   = "#1a73e8";
 const GOOGLE_RED    = "#ea4335";
 const GOOGLE_GREEN  = "#34a853";
@@ -344,7 +344,7 @@ const SearchModal = React.memo(({ visible, onClose, startText, endText, onStartC
               onPress={() => { setActiveField("start"); startRef.current?.focus(); }}>
               <TextInput ref={startRef} style={sm.fieldInput} placeholder="Starting point" placeholderTextColor="#adb5bd"
                 value={startText} onFocus={() => { setActiveField("start"); setSuggestions([]); }}
-                onChangeText={t => { onStartChange(t); query(t, "start"); }}
+                onChangeText={(t: string) => { onStartChange(t); query(t, "start"); }}
                 returnKeyType="next" onSubmitEditing={() => endRef.current?.focus()} />
               {startText.length > 0 && <TouchableOpacity onPress={() => { onStartChange(""); setSuggestions([]); }} hitSlop={{ top:10,bottom:10,left:10,right:10 }}><Text style={sm.clearIcon}>✕</Text></TouchableOpacity>}
             </TouchableOpacity>
@@ -353,7 +353,7 @@ const SearchModal = React.memo(({ visible, onClose, startText, endText, onStartC
               onPress={() => { setActiveField("end"); endRef.current?.focus(); }}>
               <TextInput ref={endRef} style={sm.fieldInput} placeholder="Destination" placeholderTextColor="#adb5bd"
                 value={endText} onFocus={() => { setActiveField("end"); setSuggestions([]); }}
-                onChangeText={t => { onEndChange(t); query(t, "end"); }}
+                onChangeText={(t: string) => { onEndChange(t); query(t, "end"); }}
                 returnKeyType="search" onSubmitEditing={() => { onClose(); onGetRoute(); }} />
               {endText.length > 0 && <TouchableOpacity onPress={() => { onEndChange(""); setSuggestions([]); }} hitSlop={{ top:10,bottom:10,left:10,right:10 }}><Text style={sm.clearIcon}>✕</Text></TouchableOpacity>}
             </TouchableOpacity>
@@ -363,7 +363,7 @@ const SearchModal = React.memo(({ visible, onClose, startText, endText, onStartC
           {suggestions.length > 0 ? (
             <View style={sm.suggSection}>
               <Text style={sm.suggLabel}>{activeField === "start" ? "📍 Start" : "🏁 Destination"} suggestions</Text>
-              {suggestions.slice(0, 6).map((item, idx) => (
+              {suggestions.slice(0, 6).map((item: any, idx: number) => (
                 <TouchableOpacity key={item.place_id ?? idx} style={sm.suggRow} onPress={() => pick(item)} activeOpacity={0.7}>
                   <View style={sm.suggIcon}><Text style={{ fontSize: 15 }}>{item._field === "start" ? "🔵" : "🔴"}</Text></View>
                   <View style={sm.suggTextCol}>
@@ -543,13 +543,13 @@ export default function MapScreen() {
 
   useEffect(() => {
     const t = setInterval(() => {
-      setRefreshCountdown(p => { if (p <= 1) { loadFloodZones(); loadHazardReports(); return REFRESH_INTERVAL; } return p - 1; });
+      setRefreshCountdown((p: number) => { if (p <= 1) { loadFloodZones(); loadHazardReports(); return REFRESH_INTERVAL; } return p - 1; });
     }, 1000);
     return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
-    const severe = floodZones.find(z => z.severity === "EXTREME" || z.severity === "WARNING");
+    const severe = floodZones.find((z: FloodZone) => z.severity === "EXTREME" || z.severity === "WARNING");
     if (severe) setTimeout(() => setAlertZone(severe), 1200);
   }, [floodZones]);
 
@@ -575,14 +575,14 @@ export default function MapScreen() {
     setUserCoord(c);
     setRegion({ ...c, latitudeDelta: 0.08, longitudeDelta: 0.08 });
 
-    Location.watchPositionAsync({ accuracy: Location.Accuracy.High, timeInterval: 2000, distanceInterval: 8 }, async loc => {
+    Location.watchPositionAsync({ accuracy: Location.Accuracy.High, timeInterval: 2000, distanceInterval: 8 }, async (loc: Location.LocationObject) => {
       const coord: Coord = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
       setUserCoord(coord);
       if (!navRef.current) return;
 
       mapRef.current?.animateCamera({ center: coord, zoom: 17, heading: loc.coords.heading ?? 0, pitch: 45 }, { duration: 700 });
 
-      setSteps(prev => {
+      setSteps((prev: NavStep[]) => {
         if (!prev.length) return prev;
         const i = stepRef.current;
         const st = prev[i];
@@ -608,7 +608,7 @@ export default function MapScreen() {
       // ── Live flood detection & auto-reroute ──────────────────────────
       if (rerouteGuard.current || !endCoordRef.current) return;
       const zones = zonesRef.current;
-      const inFlood = zones.some(z => z.severity !== "NORMAL" && pointInPolygon(coord, z.boundary.coordinates));
+      const inFlood = zones.some((z: FloodZone) => z.severity !== "NORMAL" && pointInPolygon(coord, z.boundary.coordinates));
       if (inFlood) {
         rerouteGuard.current = true;
         setRerouting(true);
@@ -717,13 +717,13 @@ export default function MapScreen() {
         <UrlTile urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} />
 
         {/* Flood zone polygons */}
-        {floodZones.map(z => (
+        {floodZones.map((z: FloodZone) => (
           <Polygon key={z.id} coordinates={z.boundary.coordinates}
             fillColor={ZONE_FILL[z.severity]} strokeColor={ZONE_STROKE[z.severity]} strokeWidth={2.5} />
         ))}
 
         {/* Dim inactive route alternatives */}
-        {showAlts && routeOptions.map((opt, i) =>
+        {showAlts && routeOptions.map((opt: RouteOption, i: number) =>
           i !== selectedIdx && opt.coords.length > 0 ? (
             <Polyline key={`dim-${i}`} coordinates={opt.coords}
               strokeColor="rgba(130,130,130,0.28)" strokeWidth={5} lineCap="round" />
@@ -731,7 +731,7 @@ export default function MapScreen() {
         )}
 
         {/* Active route — colour-coded segments */}
-        {activeOption?.segments.map((seg, i) => (
+        {activeOption?.segments.map((seg: RouteSegment, i: number) => (
           <React.Fragment key={`seg-${i}`}>
             <Polyline coordinates={seg.coords} strokeColor={`${SEGMENT_COLOR[seg.risk]}28`} strokeWidth={18} lineCap="round" />
             <Polyline coordinates={seg.coords} strokeColor={SEGMENT_COLOR[seg.risk]} strokeWidth={6} lineCap="round" lineJoin="round" />
@@ -739,7 +739,7 @@ export default function MapScreen() {
         ))}
 
         {/* Hazard pins */}
-        {hazardReports.map(r => (
+        {hazardReports.map((r: HazardReport) => (
           <Marker key={r.id} coordinate={r.location} anchor={{ x: 0.5, y: 1 }} onPress={() => setActiveReport(r)}>
             <View style={[g.hazPin, { borderColor: HAZARD_COLOR[r.report_type] }]}>
               <Text style={g.hazPinIcon}>{HAZARD_ICON[r.report_type]}</Text>
@@ -759,7 +759,7 @@ export default function MapScreen() {
             <Text style={g.navInstText} numberOfLines={1}>{curInstruction}</Text>
             {!!nxtInstruction && <Text style={g.navNextText} numberOfLines={1}>then: {nxtInstruction}</Text>}
           </View>
-          <TouchableOpacity style={g.voiceBtn} onPress={() => { setVoiceEnabled(v => !v); if (voiceEnabled) Speech.stop(); }}>
+          <TouchableOpacity style={g.voiceBtn} onPress={() => { setVoiceEnabled((v: boolean) => !v); if (voiceEnabled) Speech.stop(); }}>
             <Text style={g.voiceBtnIcon}>{voiceEnabled ? "🔊" : "🔇"}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={g.navExitBtn} onPress={stopNav}>
@@ -846,7 +846,7 @@ export default function MapScreen() {
           {activeOption.detoured ? (
             <View style={[g.statusBanner, { backgroundColor: "#e6f4ea" }]}>
               <Text style={g.statusIcon}>🛡</Text>
-              <Text style={[g.statusText, { color: "#137333" }]}>Flood-safe route — avoids {routeOptions.find(o => o.tag === "fastest")?.zonesHit.length ?? 0} zone(s)</Text>
+              <Text style={[g.statusText, { color: "#137333" }]}>Flood-safe route — avoids {routeOptions.find((o: RouteOption) => o.tag === "fastest")?.zonesHit.length ?? 0} zone(s)</Text>
             </View>
           ) : activeOption.zonesHit.length > 0 ? (
             <View style={[g.statusBanner, { backgroundColor: "#fce8e6" }]}>
@@ -872,7 +872,7 @@ export default function MapScreen() {
           <View style={g.instrRow}>
             <View style={g.instrArrowBox}><Text style={g.instrArrow}>↑</Text></View>
             <Text style={g.instrText} numberOfLines={2}>{curInstruction}</Text>
-            <TouchableOpacity style={[g.voiceToggle, voiceEnabled && g.voiceToggleActive]} onPress={() => setVoiceEnabled(v => !v)}>
+            <TouchableOpacity style={[g.voiceToggle, voiceEnabled && g.voiceToggleActive]} onPress={() => setVoiceEnabled((v: boolean) => !v)}>
               <Text style={{ fontSize: 17 }}>{voiceEnabled ? "🔊" : "🔇"}</Text>
             </TouchableOpacity>
           </View>

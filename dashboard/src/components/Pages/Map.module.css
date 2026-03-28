@@ -1,93 +1,118 @@
-.mapPage {
-  animation: fadeIn 0.3s ease;
-}
+/* Map.module.css — additions for API-connected elements */
+/* Add these rules to your existing Map.module.css file  */
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.pageHeader {
-  margin-bottom: 28px;
-}
-
-.pageHeader h2 {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  margin: 0;
-  padding: 0;
-  color: #e8eaf0;
-}
-
-.pageHeader p {
-  color: #6b7a99;
-  font-size: 0.85rem;
-  margin-top: 4px;
-  padding: 0;
-}
-
-.twoCol {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.controlCard,
-.legendCard {
-  padding: 16px;
-}
-
-.legend {
+.page {
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  font-size: 0.82rem;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
 }
 
-.legend span {
+.pageTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+/* ── Map container ── */
+.mapContainer {
+  height: 500px;
+  background: #0d1117;
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
-.legendDot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
+.mapPlaceholder {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 1rem;
 }
 
-.legendDot.critical {
-  background: #ff3f5b;
+/* ── Flood zone rows ── */
+.zoneRow {
+  border-left: 3px solid var(--accent);
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 6px 6px 0;
 }
 
-.legendDot.warning {
-  background: #f7c948;
+.zoneInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.legendDot.safe {
-  background: #00c9a7;
+.zoneName {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.9rem;
 }
 
-.mapContainer {
+.zoneDesc {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0;
+}
+
+/* ── Forms ── */
+.formGrid {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 0.6rem 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.input,
+.select,
+.textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
   width: 100%;
-  height: 480px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  overflow: hidden;
-  background: #111520;
+  box-sizing: border-box;
 }
 
-@media (max-width: 900px) {
-  .twoCol {
-    grid-template-columns: 1fr;
-  }
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.textarea {
+  resize: vertical;
+  font-family: monospace;
+}
+
+.select option {
+  background: #1a1f2e;
+}
+
+/* ── Status / error messages ── */
+.status {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+}
+
+.errorMsg {
+  color: var(--danger);
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
 }
