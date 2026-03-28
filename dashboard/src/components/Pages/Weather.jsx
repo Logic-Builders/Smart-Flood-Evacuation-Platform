@@ -91,7 +91,7 @@ export const Weather = () => {
             </div>
             <div className={styles.conditionItem}>
               <div className={styles.condLabel}>Wind Speed</div>
-              <div style={{ ...styles.condVal, color: '#f7c948' }}>62 km/h</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: '1.1rem', fontWeight: 700, marginTop: '4px', color: '#f7c948' }}>62 km/h</div>
             </div>
             <div className={styles.conditionItem}>
               <div className={styles.condLabel}>River Level</div>
@@ -99,7 +99,7 @@ export const Weather = () => {
             </div>
             <div className={styles.conditionItem}>
               <div className={styles.condLabel}>Forecast 6h</div>
-              <div style={{ ...styles.condVal, color: '#f7c948' }}>+120mm</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: '1.1rem', fontWeight: 700, marginTop: '4px', color: '#f7c948' }}>+120mm</div>
             </div>
           </div>
         </Card>
