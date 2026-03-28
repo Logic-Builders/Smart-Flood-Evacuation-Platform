@@ -1,269 +1,133 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Dimensions,
-  Animated,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { AlertTriangle, Navigation, Grid, Bell } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, ScrollView } from 'react-native';
+import { Droplets, Bell } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const { width } = Dimensions.get('window');
-const CARD_PADDING = width * 0.06;
-const CARD_BORDER_RADIUS = 28;
+import AlertStrip from '../components/homepage/AlertStrip';
+import ReportFloodCard from '../components/homepage/ReportFloodCard';
+import SafeRouteCard from '../components/homepage/SafeRouteCard';
 
 const HighContrastDashboard: React.FC = () => {
-  const navigation = useNavigation();
-
-  // Separate animated values for each card
-  const reportScale = React.useRef(new Animated.Value(1)).current;
-  const mapScale = React.useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = (animatedValue: Animated.Value) => {
-    Animated.timing(animatedValue, {
-      toValue: 0.97,
-      duration: 100,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = (animatedValue: Animated.Value) => {
-    Animated.timing(animatedValue, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  };
-
   return (
-    <SafeAreaView 
-      edges={['left', 'right', 'bottom']} 
-      style={{ flex: 1, backgroundColor: '#f8fafc' }}
+    <SafeAreaView
+      edges={['left', 'right', 'bottom']}
+      style={{ flex: 1, backgroundColor: '#f0f4f8' }}
     >
-      {/* Top App Bar */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          paddingHorizontal: 24,
-          height: 60,
-          backgroundColor: 'white',
-          borderBottomWidth: 4,
-          borderBottomColor: '#1E3A8A',
-        }}
-      >
-        <Text
+      {/* ── Top App Bar ── */}
+      <View style={{ backgroundColor: '#1E3A8A' }}>
+        {/* Main row */}
+        <View
           style={{
-            fontFamily: 'Manrope',
-            fontWeight: '900',
-            fontSize: 24,
-            color: '#1E3A8A',
-            letterSpacing: -0.5,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: 20,
+            paddingTop: 14,
+            paddingBottom: 14,
           }}
         >
-          Flood Evacuation
-        </Text>
-        <Bell color="#1E3A8A" size={28} />
-      </View>
-
-      <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
-        {/* Report Flood Card */}
-        <LinearGradient
-          colors={['#FF0000', '#8B0000']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            borderRadius: CARD_BORDER_RADIUS,
-            padding: CARD_PADDING,
-            marginBottom: 24,
-            elevation: 6,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.25,
-            shadowRadius: 6,
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              alignSelf: 'flex-start',
-              padding: 8,
-              borderRadius: 8,
-              marginBottom: 12,
-            }}
-          >
-            <Text
+          {/* Left: icon + text */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View
               style={{
-                color: 'white',
-                fontWeight: '700',
-                fontSize: 10,
-                letterSpacing: 1.5,
-                textTransform: 'uppercase',
+                width: 38,
+                height: 38,
+                backgroundColor: 'rgba(255,255,255,0.12)',
+                borderRadius: 12,
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
-              Immediate Action Required
-            </Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1 }}>
+              <Droplets color="white" size={19} strokeWidth={2} />
+            </View>
+            <View>
               <Text
                 style={{
                   color: 'white',
-                  fontSize: 32,
-                  fontWeight: '900',
-                  marginBottom: 12,
-                  lineHeight: 36,
+                  fontFamily: 'Manrope',
+                  fontWeight: '800',
+                  fontSize: 18,
+                  letterSpacing: -0.4,
+                  lineHeight: 22,
                 }}
               >
-                REPORT{"\n"}FLOOD
+                Flood Evacuation
               </Text>
               <Text
                 style={{
-                  color: 'rgba(255,255,255,0.9)',
-                  fontSize: 14,
-                  fontWeight: '500',
-                  marginBottom: 16,
+                  color: 'rgba(255,255,255,0.45)',
+                  fontSize: 10,
+                  fontWeight: '600',
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
                 }}
               >
-                Detected rising waters or blocked drainage? Your live report helps
-                save lives in real-time.
+                Emergency Response
               </Text>
             </View>
-            <AlertTriangle
-              color="white"
-              size={65}
-              strokeWidth={1.5}
-              style={{ opacity: 0.3, position: 'absolute', right: -10, top: 20 }}
-            />
           </View>
 
-          {/* Clickable White Card */}
-          <Animated.View style={{ transform: [{ scale: reportScale }] }}>
-            <Pressable
-              onPress={() => navigation.navigate('report' as never)}
-              onPressIn={() => handlePressIn(reportScale)}
-              onPressOut={() => handlePressOut(reportScale)}
+          {/* Right: bell */}
+          <View style={{ position: 'relative' }}>
+            <View
               style={{
-                backgroundColor: 'white',
-                borderRadius: 24,
-                paddingVertical: 16,
-                flexDirection: 'row',
+                width: 40,
+                height: 40,
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderRadius: 20,
                 justifyContent: 'center',
                 alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
               }}
             >
-              <Text
-                style={{
-                  color: '#af101a',
-                  fontWeight: '900',
-                  fontSize: 16,
-                  marginRight: 8,
-                }}
-              >
-                START REPORT
-              </Text>
-              <View
-                style={{
-                  backgroundColor: '#af101a',
-                  borderRadius: 50,
-                  padding: 6,
-                }}
-              >
-                <AlertTriangle color="white" size={16} />
-              </View>
-            </Pressable>
-          </Animated.View>
-        </LinearGradient>
+              <Bell color="white" size={20} />
+            </View>
+            <View
+              style={{
+                position: 'absolute',
+                top: 7,
+                right: 7,
+                width: 8,
+                height: 8,
+                backgroundColor: '#EF4444',
+                borderRadius: 4,
+                borderWidth: 1.5,
+                borderColor: '#1E3A8A',
+              }}
+            />
+          </View>
+        </View>
 
-        {/* Safe Route Map Card */}
-        <LinearGradient
-          colors={['#3B82F6', '#1E3A8A']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        {/* Alert strip */}
+        <AlertStrip message="Active Flood Alert — Riverside & Valley sectors" />
+      </View>
+
+      {/* ── Scrollable Content ── */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: 18,
+          paddingTop: 28,
+          paddingBottom: 32,
+          gap: 20,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Section label */}
+        <Text
           style={{
-            borderRadius: CARD_BORDER_RADIUS,
-            padding: CARD_PADDING,
-            marginBottom: 24,
-            elevation: 6,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.25,
-            shadowRadius: 6,
+            color: '#64748b',
+            fontSize: 11,
+            fontWeight: '700',
+            letterSpacing: 1.2,
+            textTransform: 'uppercase',
+            marginBottom: 4,
           }}
         >
-          <Navigation
-            color="white"
-            size={40}
-            strokeWidth={2}
-            style={{ opacity: 0.6, position: 'absolute', right: 24, top: 24 }}
-          />
+          Quick Actions
+        </Text>
 
-          <Text
-            style={{
-              color: 'white',
-              fontSize: 28,
-              fontWeight: '900',
-              marginBottom: 12,
-            }}
-          >
-            Safe Route Map
-          </Text>
-          <Text
-            style={{
-              color: 'rgba(255,255,255,0.9)',
-              fontSize: 14,
-              fontWeight: '500',
-              marginBottom: 16,
-              paddingRight: 8,
-            }}
-          >
-            Real-time evacuation paths cleared by emergency personnel. Avoid
-            Riverside & Valley sectors.
-          </Text>
-
-          {/* Clickable White Card */}
-          <Animated.View style={{ transform: [{ scale: mapScale }] }}>
-            <Pressable
-              onPress={() => navigation.navigate('map' as never)}
-              onPressIn={() => handlePressIn(mapScale)}
-              onPressOut={() => handlePressOut(mapScale)}
-              style={{
-                backgroundColor: 'white',
-                borderRadius: 24,
-                paddingVertical: 16,
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-              }}
-            >
-              <Text
-                style={{
-                  color: '#1E3A8A',
-                  fontWeight: '900',
-                  fontSize: 16,
-                  marginRight: 8,
-                }}
-              >
-                VIEW LIVE NAVIGATION
-              </Text>
-              <Navigation color="#1E3A8A" size={20} />
-            </Pressable>
-          </Animated.View>
-        </LinearGradient>
+        <ReportFloodCard />
+        <SafeRouteCard />
       </ScrollView>
     </SafeAreaView>
   );
