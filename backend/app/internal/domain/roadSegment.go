@@ -5,7 +5,7 @@ import "github.com/google/uuid"
 type RoadCondition string
 
 const (
-	ConditionSafe     RoadCondition = "SAFE"
+	ConditionSafe     RoadCondition = "PASSABLE"
 	ConditionHighRisk RoadCondition = "HIGH_RISK"
 	ConditionBlocked  RoadCondition = "BLOCKED"
 )
@@ -18,6 +18,8 @@ type RoadSegment struct {
 	Condition   RoadCondition
 	FloodRisk   float64
 	HazardScore float64
+	StartPoint  GeoPoint
+	EndPoint    GeoPoint
 }
 
 func (r *RoadSegment) IsPassable() bool {

@@ -3,28 +3,22 @@ package routing
 import (
 	"errors"
 
+	"github.com/logicbuilders/flood-evacuation-backend/internal/domain"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/external"
+	"github.com/logicbuilders/flood-evacuation-backend/pkg/geo"
 	"github.com/logicbuilders/flood-evacuation-backend/pkg/graph"
 )
 
 type RoutingService struct {
-	graph *graph.Graph
+	floodSource   external.FloodDataSource
+	riskEvaluator *RiskEvaluator
 }
 
-func NewRoutingService() *RoutingService {
-	g := graph.NewGraph()
-
-	//mock road network - need to replace with DB
-	g.AddNode(graph.Node{ID: "A", Lat: 6.9271, Lng: 79.8612})
-	g.AddNode(graph.Node{ID: "B", Lat: 6.9376, Lng: 79.8502})
-	g.AddNode(graph.Node{ID: "C", Lat: 6.9401, Lng: 79.8700})
-	g.AddNode(graph.Node{ID: "D", Lat: 6.9450, Lng: 79.8550})
-
-	g.AddEdge("A", graph.Edge{To: "B", Weight: 1.5})
-	g.AddEdge("A", graph.Edge{To: "C", Weight: 3.0})
-	g.AddEdge("B", graph.Edge{To: "D", Weight: 1.0})
-	g.AddEdge("C", graph.Edge{To: "D", Weight: 2.0})
-
-	return &RoutingService{graph: g}
+func NewRoutingService(floodSource external.FloodDataSource) *RoutingService {
+	return &RoutingService{
+		floodSource:   floodSource,
+		riskEvaluator: NewRiskEvaluator(),
+	}
 }
 
 type RouteResult struct {
@@ -32,8 +26,39 @@ type RouteResult struct {
 	TotalCost float64
 }
 
-func (s *RoutingService) GetRoute(startID, goalID string) (*RouteResult, error) {
-	path, cost := graph.AStar(s.graph, startID, goalID)
+func (s *RoutingService) GetRoute(segments []domain.RoadSegment, reports []domain.HazardReport, startID, goalID string) (*RouteResult, error) {
+	g := graph.NewGraph()
+
+	for _, seg := range segments {
+		g.AddNode(graph.Node{
+			ID:  seg.ID.String(),
+			Lat: seg.StartPoint.Lat,
+			Lng: seg.StartPoint.Lng,
+		})
+		g.AddNode(graph.Node{
+			ID:  seg.EndNodeID.String(),
+			Lat: seg.EndPoint.Lat,
+			Lng: seg.EndPoint.Lng,
+		})
+
+		floodRisk, err := s.floodSource.GetFloodRisk(
+			seg.StartPoint.Lat,
+			seg.StartPoint.Lng,
+		)
+		if err != nil {
+			floodRisk = 0.5
+		}
+
+		segReports := filterReportsForSegment(reports, seg)
+		weight := s.riskEvaluator.ComputeWeight(seg, floodRisk, segReports)
+
+		g.AddEdge(seg.ID.String(), graph.Edge{
+			To:     seg.EndNodeID.String(),
+			Weight: weight,
+		})
+	}
+
+	path, cost := graph.AStar(g, startID, goalID)
 	if path == nil {
 		return nil, errors.New("no path found between given points")
 	}
@@ -42,4 +67,15 @@ func (s *RoutingService) GetRoute(startID, goalID string) (*RouteResult, error) 
 		Path:      path,
 		TotalCost: cost,
 	}, nil
+}
+
+func filterReportsForSegment(reports []domain.HazardReport, seg domain.RoadSegment) []domain.HazardReport {
+	var filtered []domain.HazardReport
+	for _, r := range reports {
+		if geo.Haversine(r.Location.Lat, r.Location.Lng, seg.StartPoint.Lat, seg.StartPoint.Lng) < 0.5 {
+			filtered = append(filtered, r)
+		}
+	}
+
+	return filtered
 }

@@ -42,7 +42,7 @@ func (s *ReportService) SubmitReport(
 	}
 
 	//create the domain object
-	location := domain.GeoPoint{Latitude: lat, Longitude: lng}
+	location := domain.GeoPoint{Lat: lat, Lng: lng}
 	report := domain.NewHazardReport(reporterID, location, reportType, severity, description)
 
 	//Save via repository

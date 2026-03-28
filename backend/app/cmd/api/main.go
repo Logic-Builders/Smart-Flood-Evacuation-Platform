@@ -8,6 +8,7 @@ import (
 	"github.com/logicbuilders/flood-evacuation-backend/config"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/reports"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/routing"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/external"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/handlers"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/middleware"
@@ -59,7 +60,9 @@ func main() {
 		admin.PATCH("/reports/:id/approve", reportHandler.Approve)
 		admin.PATCH("/reports/:id/reject", reportHandler.Reject)
 	}
-	routingService := routing.NewRoutingService()
+
+	floodAdapter := external.NewMockFloodAdaptor()
+	routingService := routing.NewRoutingService(floodAdapter)
 	routeHandler := handlers.NewRouteHandler(routingService)
 	router.GET("/api/v1/route", routeHandler.GetRoute)
 
