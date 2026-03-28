@@ -8,6 +8,7 @@ import (
 	"github.com/logicbuilders/flood-evacuation-backend/config"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/reports"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/routing"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/database"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/external"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/handlers"
@@ -25,7 +26,8 @@ func main() {
 
 	//Wire up dependencies
 	//MockRepository -> ReportService -> Report Handler
-	reportRepo := repositories.NewMockReportRepository()
+	pool := database.NewPool(cfg.DBURL)
+	reportRepo := repositories.NewPostgresReportRepository(pool)
 	reportService := reports.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
 
