@@ -1,165 +1,136 @@
-import React, { useRef, ReactNode } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, Animated } from 'react-native';
-import { useRouter } from "expo-router";
-import { ShieldCheck, AlertTriangle, MapPin, Navigation, Droplets, CloudRain, Shield } from 'lucide-react-native';
+import React from 'react';
+import { View, Text, ScrollView } from 'react-native';
+import { Droplets, Bell } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-// ----------------- AnimatedCard Component -----------------
-type AnimatedCardProps = {
-  children: ReactNode;
-  onPress?: () => void; // optional
-};
+import AlertStrip from '../components/homepage/AlertStrip';
+import ReportFloodCard from '../components/homepage/ReportFloodCard';
+import SafeRouteCard from '../components/homepage/SafeRouteCard';
 
-const AnimatedCard: React.FC<AnimatedCardProps> = ({ children, onPress }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePress = () => {
-    Animated.sequence([
-      Animated.spring(scaleAnim, { toValue: 0.95, friction: 4, useNativeDriver: true }),
-      Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
-    ]).start(() => {
-      if (onPress) onPress();
-    });
-  };
-
+const HighContrastDashboard: React.FC = () => {
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <TouchableOpacity activeOpacity={0.9} onPress={handlePress}>
-        {children}
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
-
-// ----------------- FloodSafetyDashboard -----------------
-const FloodSafetyDashboard: React.FC = () => {
-  const router = useRouter();
-
-  return (
-    <SafeAreaView className="flex-1 bg-[#f3faff]">
-      {/* Top App Bar */}
-      <View className="flex-row justify-between items-center px-6 py-4">
-        <View className="flex-row items-center">
-          <Shield color="#002045" size={24} />
-          <Text className="ml-2 font-['Manrope'] font-extrabold tracking-[0.2em] text-[#002045] text-xl">
-            Logic Builders
-          </Text>
-        </View>
-        <TouchableOpacity>
-          <View className="p-2 rounded-full">
-            <View className="w-6 h-6 bg-[#002045] rounded-full" />
+    <SafeAreaView
+      edges={['left', 'right', 'bottom']}
+      style={{ flex: 1, backgroundColor: '#f0f4f8' }}
+    >
+      {/* ── Top App Bar ── */}
+      <View style={{ backgroundColor: '#1E3A8A' }}>
+        {/* Main row */}
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: 20,
+            paddingTop: 14,
+            paddingBottom: 14,
+          }}
+        >
+          {/* Left: icon + text */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View
+              style={{
+                width: 38,
+                height: 38,
+                backgroundColor: 'rgba(255,255,255,0.12)',
+                borderRadius: 12,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Droplets color="white" size={19} strokeWidth={2} />
+            </View>
+            <View>
+              <Text
+                style={{
+                  color: 'white',
+                  fontFamily: 'Manrope',
+                  fontWeight: '800',
+                  fontSize: 18,
+                  letterSpacing: -0.4,
+                  lineHeight: 22,
+                }}
+              >
+                Flood Evacuation
+              </Text>
+              <Text
+                style={{
+                  color: 'rgba(255,255,255,0.45)',
+                  fontSize: 10,
+                  fontWeight: '600',
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                }}
+              >
+                Emergency Response
+              </Text>
+            </View>
           </View>
-        </TouchableOpacity>
+
+          {/* Right: bell */}
+          <View style={{ position: 'relative' }}>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderRadius: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Bell color="white" size={20} />
+            </View>
+            <View
+              style={{
+                position: 'absolute',
+                top: 7,
+                right: 7,
+                width: 8,
+                height: 8,
+                backgroundColor: '#EF4444',
+                borderRadius: 4,
+                borderWidth: 1.5,
+                borderColor: '#1E3A8A',
+              }}
+            />
+          </View>
+        </View>
+
+        {/* Alert strip */}
+        <AlertStrip message="Active Flood Alert — Riverside & Valley sectors" />
       </View>
 
-      <ScrollView className="flex-1 px-6">
-        {/* Header */}
-        <View className="items-center mt-8 mb-10">
-          <Text className="text-4xl font-extrabold text-[#002045] text-center leading-tight">
-            Flood Safety{"\n"}Dashboard
-          </Text>
-          <Text className="text-slate-500 text-center mt-4 text-base leading-relaxed">
-            Real-time monitoring and emergency response tools to keep your community safe during weather events.
-          </Text>
-        </View>
+      {/* ── Scrollable Content ── */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: 18,
+          paddingTop: 28,
+          paddingBottom: 32,
+          gap: 20,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Section label */}
+        <Text
+          style={{
+            color: '#64748b',
+            fontSize: 11,
+            fontWeight: '700',
+            letterSpacing: 1.2,
+            textTransform: 'uppercase',
+            marginBottom: 4,
+          }}
+        >
+          Quick Actions
+        </Text>
 
-        {/* Current Status Card */}
-        {/* <AnimatedCard>
-          <View className="bg-white rounded-[2.5rem] p-8 mb-6 shadow-sm">
-            <View className="flex-row items-center mb-4">
-              <View className="bg-blue-100 p-4 rounded-2xl mr-4">
-                <ShieldCheck color="#1A365D" size={32} />
-              </View>
-              <View>
-                <Text className="text-[#002045]/60 font-bold uppercase tracking-wider text-xs mb-1">
-                  CURRENT STATUS
-                </Text>
-                <Text className="text-3xl font-extrabold text-[#002045]">
-                  Normal{"\n"}Conditions
-                </Text>
-              </View>
-            </View>
-            <View className="flex-row items-center justify-center mt-4">
-              <Text className="text-slate-400 text-sm">Updated 2 mins ago</Text>
-            </View>
-            <View className="flex-row items-center justify-center mt-1">
-              <MapPin size={16} color="#002045" />
-              <Text className="ml-1 font-bold text-[#002045]">Metropolitan District</Text>
-            </View>
-          </View>
-        </AnimatedCard> */}
-
-        {/* Report Flood Card */}
-        <AnimatedCard onPress={() => router.push("/report")}>
-          <View className="bg-[#C52828] rounded-[2.5rem] p-8 mb-6">
-            <View className="bg-white/20 w-16 h-16 rounded-2xl items-center justify-center mb-6">
-              <AlertTriangle color="white" size={32} />
-            </View>
-            <Text className="text-white text-3xl font-extrabold mb-2">Report Flood</Text>
-            <Text className="text-white/80 text-base mb-6 leading-relaxed">
-              Instantly alert local authorities and nearby residents of rising water levels.
-            </Text>
-            <View className="flex-row items-center">
-              <Text className="text-white font-bold uppercase tracking-widest mr-2">TAKE ACTION</Text>
-              <View className="w-4 h-0.5 bg-white" />
-            </View>
-          </View>
-        </AnimatedCard>
-
-        {/* Safe Route Map Card */}
-        <AnimatedCard onPress={() => router.push("/map")}>
-          <View className="bg-[#002045] rounded-[2.5rem] p-8 mb-6">
-            <View className="bg-white/10 w-16 h-16 rounded-2xl items-center justify-center mb-6">
-              <Navigation color="white" size={32} />
-            </View>
-            <Text className="text-white text-3xl font-extrabold mb-2">Safe Route Map</Text>
-            <Text className="text-white/80 text-base mb-6 leading-relaxed">
-              Find optimized evacuation paths and high-ground shelters in real-time.
-            </Text>
-            <View className="flex-row items-center">
-              <Text className="text-white font-bold uppercase tracking-widest mr-2">OPEN NAVIGATION</Text>
-              <View className="w-4 h-0.5 bg-white" />
-            </View>
-          </View>
-        </AnimatedCard>
-
-        {/* Stats Cards */}
-        {/* <AnimatedCard>
-          <View className="bg-blue-50/50 rounded-3xl p-6 flex-row items-center mb-4">
-            <View className="mr-4"><Droplets color="#002045" size={24} /></View>
-            <View>
-              <Text className="text-[#002045]/60 font-bold uppercase tracking-wider text-[10px]">RIVER LEVEL</Text>
-              <Text className="text-xl font-extrabold text-[#002045]">1.2m (Stable)</Text>
-            </View>
-          </View>
-        </AnimatedCard>
-
-        <AnimatedCard>
-          <View className="bg-blue-50/50 rounded-3xl p-6 flex-row items-center mb-4">
-            <View className="mr-4"><CloudRain color="#002045" size={24} /></View>
-            <View>
-              <Text className="text-[#002045]/60 font-bold uppercase tracking-wider text-[10px]">PRECIPITATION</Text>
-              <Text className="text-xl font-extrabold text-[#002045]">5mm / 24h</Text>
-            </View>
-          </View>
-        </AnimatedCard>
-
-        <AnimatedCard>
-          <View className="bg-blue-50/50 rounded-3xl p-6 flex-row items-center mb-24">
-            <View className="mr-4">
-              <View className="w-6 h-6 border-2 border-[#002045] rotate-45 items-center justify-center">
-                <Text className="font-bold text-[#002045] -rotate-45">!</Text>
-              </View>
-            </View>
-            <View>
-              <Text className="text-[#002045]/60 font-bold uppercase tracking-wider text-[10px]">SHELTERS OPEN</Text>
-              <Text className="text-xl font-extrabold text-[#002045]">12 Nearby</Text>
-            </View>
-          </View>
-        </AnimatedCard> */}
-
+        <ReportFloodCard />
+        <SafeRouteCard />
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default FloodSafetyDashboard;
+export default HighContrastDashboard;
