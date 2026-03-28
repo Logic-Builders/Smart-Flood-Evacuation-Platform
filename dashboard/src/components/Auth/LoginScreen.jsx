@@ -1,68 +1,65 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import styles from './LoginScreen.module.css';
+// dashboard/src/components/Auth/LoginScreen.jsx
+// Uses default export — App.jsx imports it as: import LoginScreen from './components/Auth/LoginScreen'
+import React, { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import styles from "./LoginScreen.module.css";
 
-export const LoginScreen = () => {
-  const { login, error } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+export default function LoginScreen() {
+  const { login, error, loading } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleLogin = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      login(username, password);
-      setIsLoading(false);
-    }, 200);
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleLogin();
+    if (email.trim() && password.trim()) {
+      login(email.trim(), password.trim());
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleLogin();
+  };
+
   return (
-    <div className={styles.loginScreen}>
+    <div className={styles.loginWrapper}>
       <div className={styles.loginCard}>
-        <div className={styles.loginLogo}>
-          <div className={styles.icon}>🌊</div>
-          <div>
-            <h1>FloodGuard</h1>
-            <span>Admin Command Center</span>
-          </div>
-        </div>
-        <div className={styles.loginLabel}>Username</div>
+        <div className={styles.logo}>⚡ FloodGuard</div>
+        <h2 className={styles.title}>Admin Dashboard</h2>
+        <p className={styles.subtitle}>Smart Flood Evacuation Platform</p>
+
         <input
-          className={styles.loginInput}
-          type="text"
-          placeholder="admin1"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          onKeyPress={handleKeyPress}
-          autoComplete="off"
+          className={styles.input}
+          type="email"
+          placeholder="Admin email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={handleKeyDown}
+          autoComplete="email"
         />
-        <div className={styles.loginLabel}>Password</div>
         <input
-          className={styles.loginInput}
+          className={styles.input}
           type="password"
-          placeholder="••••••••"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
+          autoComplete="current-password"
         />
+
+        {error && <div className={styles.error}>{error}</div>}
+
         <button
           className={styles.loginBtn}
           onClick={handleLogin}
-          disabled={isLoading}
+          disabled={loading}
         >
-          {isLoading ? 'Authenticating...' : 'Authenticate →'}
+          {loading ? "Signing in…" : "Sign In"}
         </button>
-        <div className={styles.loginError}>{error}</div>
-        <p className={styles.demoHint}>
-          Demo: admin1 / admin123 &nbsp;|&nbsp; admin2 / flood2024
-        </p>
+
+        <div className={styles.demoCredentials}>
+          <p>Demo credentials:</p>
+          <code>admin@floodevac.lk / adminpassword</code>
+        </div>
       </div>
     </div>
   );
-};
+}

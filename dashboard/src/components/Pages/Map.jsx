@@ -1,102 +1,213 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Card } from '../UI/Card';
-import { Button } from '../UI/Button';
-import { useToast } from '../../context/ToastContext';
-import styles from './Map.module.css';
+// dashboard/src/components/Pages/Map.jsx
+import React, { useEffect, useState } from "react";
+import { Card, Badge, Button } from "../UI";
+import { useToast } from "../../context/ToastContext";
+import { getFloodZones, flagArea, broadcastAlert } from "../../api/api"; // ← fixed path
+import styles from "./Map.module.css";
 
-export const FloodMap = () => {
+const SEVERITY_COLOR = {
+  NORMAL:  "var(--accent)",
+  WATCH:   "var(--accent3)",
+  WARNING: "#ff9500",
+  EXTREME: "var(--danger)",
+};
+
+const SEVERITY_BADGE = {
+  NORMAL:  "default",
+  WATCH:   "yellow",
+  WARNING: "yellow",
+  EXTREME: "red",
+};
+
+export default function FloodMap() {
   const { showToast } = useToast();
-  const mapContainer = useRef(null);
-  const [mapInitialized, setMapInitialized] = useState(false);
+
+  const [zones, setZones] = useState([]);
+  const [zonesLoading, setZonesLoading] = useState(true);
+  const [zonesError, setZonesError] = useState("");
+
+  const [flagSeverity, setFlagSeverity] = useState("WARNING");
+  const [flagReason, setFlagReason] = useState("");
+  const [flagCoords, setFlagCoords] = useState(
+    '[{"latitude":7.8731,"longitude":80.7718}]'
+  );
+  const [flagging, setFlagging] = useState(false);
+
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertSeverity, setAlertSeverity] = useState("WARNING");
+  const [alertCoords, setAlertCoords] = useState(
+    '[{"latitude":7.8731,"longitude":80.7718}]'
+  );
+  const [broadcasting, setBroadcasting] = useState(false);
 
   useEffect(() => {
-    if (!mapInitialized && mapContainer.current) {
-      initializeMap();
-    }
-  }, [mapInitialized]);
-
-  const initializeMap = async () => {
-    try {
-      // This is a placeholder. In production, you'd initialize Leaflet here.
-      // For now, we're just showing the map container with placeholder content
-      const container = mapContainer.current;
-      if (container) {
-        container.innerHTML = `
-          <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #161c2a 0%, #1d2538 100%); border-radius: 12px;">
-            <div style="text-align: center; color: #6b7a99;">
-              <div style="font-size: 2rem; margin-bottom: 10px;">🗺</div>
-              <div style="font-size: 0.9rem;">Interactive Flood Map</div>
-              <div style="font-size: 0.75rem; margin-top: 5px; color: #6b7a99;">Powered by Leaflet.js</div>
-              <div style="margin-top: 20px; font-size: 0.8rem; color: #00c9a7;">
-                <div>📍 3 Critical Zones</div>
-                <div>⚠️ 2 Warning Zones</div>
-                <div>✓ 1 Safe Route</div>
-              </div>
-            </div>
-          </div>
-        `;
+    let cancelled = false;
+    (async () => {
+      try {
+        setZonesLoading(true);
+        const data = await getFloodZones();
+        if (!cancelled) setZones(data);
+      } catch (err) {
+        if (!cancelled) setZonesError(err.message || "Failed to load flood zones.");
+      } finally {
+        if (!cancelled) setZonesLoading(false);
       }
-      setMapInitialized(true);
-    } catch (error) {
-      console.error('Error initializing map:', error);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleFlagArea = async () => {
+    if (!flagReason.trim()) {
+      showToast("⚠️ Please enter a reason", "var(--accent3)");
+      return;
+    }
+    let parsedCoords;
+    try {
+      parsedCoords = JSON.parse(flagCoords);
+    } catch {
+      showToast("❌ Coordinates JSON is invalid", "var(--danger)");
+      return;
+    }
+    setFlagging(true);
+    try {
+      await flagArea(flagSeverity, flagReason.trim(), parsedCoords);
+      showToast("✅ Area flagged successfully", "var(--accent)");
+      setFlagReason("");
+    } catch (err) {
+      showToast(`❌ ${err.message || "Flag area failed"}`, "var(--danger)");
+    } finally {
+      setFlagging(false);
     }
   };
 
-  const handleAddMarker = (type) => {
-    const messages = {
-      warning: '📍 Warning zone added',
-      critical: '📍 Critical zone added',
-      safe: '📍 Safe route added',
-    };
-    const colors = {
-      warning: 'var(--accent3)',
-      critical: 'var(--danger)',
-      safe: 'var(--accent)',
-    };
-    showToast(messages[type], colors[type]);
+  const handleBroadcast = async () => {
+    if (!alertMessage.trim()) {
+      showToast("⚠️ Please enter an alert message", "var(--accent3)");
+      return;
+    }
+    let parsedCoords;
+    try {
+      parsedCoords = JSON.parse(alertCoords);
+    } catch {
+      showToast("❌ Region coordinates JSON is invalid", "var(--danger)");
+      return;
+    }
+    setBroadcasting(true);
+    try {
+      await broadcastAlert(alertMessage.trim(), alertSeverity, parsedCoords);
+      showToast("📢 Alert broadcasted!", "var(--danger)");
+      setAlertMessage("");
+    } catch (err) {
+      showToast(`❌ ${err.message || "Broadcast failed"}`, "var(--danger)");
+    } finally {
+      setBroadcasting(false);
+    }
   };
 
   return (
-    <div className={styles.mapPage}>
-      <div className={styles.pageHeader}>
-        <h2>Live Flood Map</h2>
-        <p>Interactive map — mark and monitor flood-affected zones</p>
-      </div>
+    <div className={styles.page}>
+      <h2 className={styles.pageTitle}>Flood Zone Map</h2>
 
-      <div className={styles.twoCol} style={{ marginBottom: '16px' }}>
-        <Card title="🎛 Map Controls" className={styles.controlCard}>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <Button variant="approve" onClick={() => handleAddMarker('warning')}>
-              + Warning Zone
-            </Button>
-            <Button variant="reject" onClick={() => handleAddMarker('critical')}>
-              + Critical Zone
-            </Button>
-            <Button variant="secondary" onClick={() => handleAddMarker('safe')}>
-              + Safe Route
-            </Button>
+      <Card title="Live Map" title_icon="🗺️">
+        <div className={styles.mapContainer} id="leaflet-map">
+          <p className={styles.mapPlaceholder}>
+            Map renders here — initialise Leaflet and plot zone polygons from the list below.
+          </p>
+        </div>
+      </Card>
+
+      <Card title="Active Flood Zones" title_icon="🌊">
+        {zonesLoading && <p className={styles.status}>Loading zones…</p>}
+        {zonesError   && <p className={styles.errorMsg}>{zonesError}</p>}
+        {!zonesLoading && !zonesError && zones.length === 0 && (
+          <p className={styles.status}>No active flood zones reported.</p>
+        )}
+        {zones.map((zone, i) => (
+          <div
+            key={zone.id ?? i}
+            className={styles.zoneRow}
+            style={{ borderLeftColor: SEVERITY_COLOR[zone.severity] ?? "var(--accent)" }}
+          >
+            <div className={styles.zoneInfo}>
+              <span className={styles.zoneName}>{zone.name ?? `Zone ${i + 1}`}</span>
+              <Badge variant={SEVERITY_BADGE[zone.severity] ?? "default"}>
+                {zone.severity}
+              </Badge>
+            </div>
+            {zone.description && (
+              <p className={styles.zoneDesc}>{zone.description}</p>
+            )}
           </div>
-        </Card>
+        ))}
+      </Card>
 
-        <Card title="🗂 Legend" className={styles.legendCard}>
-          <div className={styles.legend}>
-            <span>
-              <span className={`${styles.legendDot} ${styles.critical}`}></span>
-              Critical
-            </span>
-            <span>
-              <span className={`${styles.legendDot} ${styles.warning}`}></span>
-              Warning
-            </span>
-            <span>
-              <span className={`${styles.legendDot} ${styles.safe}`}></span>
-              Safe Route
-            </span>
-          </div>
-        </Card>
-      </div>
+      <Card title="Flag an Area" title_icon="🚩">
+        <div className={styles.formGrid}>
+          <label className={styles.label}>Severity</label>
+          <select
+            className={styles.select}
+            value={flagSeverity}
+            onChange={(e) => setFlagSeverity(e.target.value)}
+          >
+            <option value="WATCH">WATCH</option>
+            <option value="WARNING">WARNING</option>
+            <option value="EXTREME">EXTREME</option>
+          </select>
 
-      <div className={styles.mapContainer} ref={mapContainer}></div>
+          <label className={styles.label}>Reason</label>
+          <input
+            className={styles.input}
+            placeholder="e.g. Dam water release expected at 14:00"
+            value={flagReason}
+            onChange={(e) => setFlagReason(e.target.value)}
+          />
+
+          <label className={styles.label}>Boundary Coordinates (JSON)</label>
+          <textarea
+            className={styles.textarea}
+            rows={3}
+            value={flagCoords}
+            onChange={(e) => setFlagCoords(e.target.value)}
+          />
+        </div>
+        <Button variant="primary" onClick={handleFlagArea} disabled={flagging}>
+          {flagging ? "Flagging…" : "🚩 Flag Area"}
+        </Button>
+      </Card>
+
+      <Card title="Broadcast Alert" title_icon="📢">
+        <div className={styles.formGrid}>
+          <label className={styles.label}>Message</label>
+          <input
+            className={styles.input}
+            placeholder="e.g. Evacuate immediately — flood imminent"
+            value={alertMessage}
+            onChange={(e) => setAlertMessage(e.target.value)}
+          />
+
+          <label className={styles.label}>Severity</label>
+          <select
+            className={styles.select}
+            value={alertSeverity}
+            onChange={(e) => setAlertSeverity(e.target.value)}
+          >
+            <option value="WATCH">WATCH</option>
+            <option value="WARNING">WARNING</option>
+            <option value="EXTREME">EXTREME</option>
+          </select>
+
+          <label className={styles.label}>Region Coordinates (JSON)</label>
+          <textarea
+            className={styles.textarea}
+            rows={3}
+            value={alertCoords}
+            onChange={(e) => setAlertCoords(e.target.value)}
+          />
+        </div>
+        <Button variant="reject" onClick={handleBroadcast} disabled={broadcasting}>
+          {broadcasting ? "Broadcasting…" : "📢 Broadcast Alert"}
+        </Button>
+      </Card>
     </div>
   );
-};
+}

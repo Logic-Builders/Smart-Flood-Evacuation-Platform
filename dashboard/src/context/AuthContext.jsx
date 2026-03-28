@@ -1,46 +1,40 @@
-import React, { createContext, useState, useContext } from 'react';
+// dashboard/src/context/AuthContext.jsx
+import React, { createContext, useState, useContext } from "react";
+import { login as apiLogin, logout as apiLogout } from "../api/api";  // ← fixed path
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [error, setError] = useState('');
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const USERS = {
-    admin1: 'admin123',
-    admin2: 'flood2024',
-  };
-
-  const login = (username, password) => {
-    setError('');
-    if (USERS[username] && USERS[username] === password) {
-      setIsAuthenticated(true);
-      setCurrentUser(username);
-      return true;
-    } else {
-      setError('Invalid credentials. Try admin1 / admin123');
-      return false;
+  const login = async (email, password) => {
+    setError("");
+    setLoading(true);
+    try {
+      const token = await apiLogin(email, password);
+      setUser({ email, token });
+    } catch (err) {
+      setError(err.message || "Login failed. Check your credentials.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = () => {
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-    setError('');
+    apiLogout();
+    setUser(null);
+    setError("");
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, currentUser, error, login, logout }}>
+    <AuthContext.Provider value={{ user, error, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
-};
+export function useAuth() {
+  return useContext(AuthContext);
+}
