@@ -31,7 +31,7 @@ func main() {
 
 	authHandler := handlers.NewAuthHandler()
 
-	floodAdapter := external.NewMockFloodAdaptor()
+	floodAdaptor := external.NewMockFloodAdaptor()
 	routingService := routing.NewRoutingService(floodAdaptor)
 	routeHandler := handlers.NewRouteHandler(routingService)
 
@@ -39,7 +39,7 @@ func main() {
 	router := gin.Default()
 
 	//public routes
-	router.FET("/health", func(c *gin.Context) {
+	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":  "ok",
 			"message": "Flood Evacuation API is running",
@@ -56,7 +56,7 @@ func main() {
 
 	// admin routes - protected
 	admin := v1.Group("/admin")
-	admin.Use(middleware.RequiredAuth())
+	admin.Use(middleware.RequireAuth())
 	{
 		admin.GET("/reports/pending", reportHandler.GetPending)
 		admin.PATCH("/reports/:id/approve", reportHandler.Approve)
