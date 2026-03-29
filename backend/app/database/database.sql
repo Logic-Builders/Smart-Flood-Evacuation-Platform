@@ -472,7 +472,7 @@ REVOKE SELECT (password_hash) ON flood_system.users FROM anon, authenticated;
 -- 9. seed data
 INSERT INTO flood_system.users (email, full_name, password_hash, role)
 VALUES
-    ('admin@flood.lk',   'Admin User',     '$2b$10$placeholder_hash_admin',   'ADMIN'::user_role),
+    ('admin@flood.lk',   'Admin User',     '$2a$10$DSSIDEPdBJKXTmNXjBMwNeChV71TVpAQevHcqtf3t/riPFDLj9nZG',   'ADMIN'::user_role),
     ('evacuee@flood.lk', 'Test Evacuee',   '$2b$10$placeholder_hash_user',    'PUBLIC'::user_role),
     ('rescue@flood.lk',  'Rescue Officer', '$2b$10$placeholder_hash_rescue',  'RESCUE'::user_role);
 INSERT INTO flood_system.flood_risk_zones (
