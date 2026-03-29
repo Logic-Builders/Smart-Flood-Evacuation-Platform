@@ -36,7 +36,7 @@ func (h *FloodZoneHandler) GetZones(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"error":   "Failed to fetch flood zones",
+			"error":   err.Error(),
 		})
 		return
 	}
