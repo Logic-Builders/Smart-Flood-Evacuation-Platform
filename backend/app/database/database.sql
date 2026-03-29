@@ -140,10 +140,13 @@ CREATE TABLE flood_system.hazard_reports (
     status          report_status NOT NULL DEFAULT 'PENDING',
     location        GEOMETRY(Point, 4326) NOT NULL,
     affected_area   GEOMETRY(Polygon, 4326),
+    -- severity is int (1-5) not an enum — matches Go service validation: if severity < 1 || severity > 5
     severity        SMALLINT NOT NULL DEFAULT 3 CHECK (severity BETWEEN 1 AND 5),
     description     TEXT,
     photo_urls      TEXT[],
     ttl             INTERVAL DEFAULT '3 hours',
+    -- expires_at = submitted_at + ttl. Originally GENERATED ALWAYS AS but changed to trigger
+    -- because PostgreSQL ERROR 42P17: generation expression must be immutable
     expires_at      TIMESTAMPTZ,
     submitted_at    TIMESTAMPTZ DEFAULT NOW(),
     reviewed_by     UUID REFERENCES flood_system.users(user_id) ON DELETE SET NULL,
