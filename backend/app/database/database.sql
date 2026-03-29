@@ -159,17 +159,12 @@ CREATE INDEX idx_reports_location ON flood_system.hazard_reports USING GIST(loca
 CREATE INDEX idx_reports_status   ON flood_system.hazard_reports(status);
 CREATE INDEX idx_reports_reporter ON flood_system.hazard_reports(reporter_id);
 CREATE INDEX idx_reports_expires  ON flood_system.hazard_reports(expires_at);
-CREATE OR REPLACE FUNCTION flood_system.set_report_expiry()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.expires_at := NEW.submitted_at + NEW.ttl;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-CREATE TRIGGER trigger_set_report_expiry
-    BEFORE INSERT OR UPDATE OF ttl, submitted_at
-    ON flood_system.hazard_reports
-    FOR EACH ROW EXECUTE FUNCTION flood_system.set_report_expiry();
+
+-- partial index for PENDING reports
+-- admin dashboard only queries PENDING reports — avoids scanning APPROVED/REJECTED/ARCHIVED rows
+CREATE INDEX idx_reports_pending  ON flood_system.hazard_reports(submitted_at)
+    WHERE status = 'PENDING';
+
 CREATE TABLE flood_system.dam_stations (
     station_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     station_name    VARCHAR(200) NOT NULL,
