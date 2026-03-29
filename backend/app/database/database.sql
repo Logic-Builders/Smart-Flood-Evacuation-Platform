@@ -194,7 +194,7 @@ CREATE TABLE flood_system.weather_data (
     station_name    VARCHAR(100),
     rainfall_mm         NUMERIC(8,2),
     wind_speed_kmh      NUMERIC(6,2),
-    humidity_percent    NUMERIC(5,2),
+    humidity_percent    NUMERIC(5,2) CHECK (humidity_percent BETWEEN 0 AND 100),
     temperature_celsius NUMERIC(5,2),
     forecast_time   TIMESTAMPTZ NOT NULL,
     recorded_at     TIMESTAMPTZ DEFAULT NOW()
