@@ -175,6 +175,12 @@ CREATE TABLE flood_system.dam_stations (
     alert_level_m       NUMERIC(8,3),
     minor_flood_level_m NUMERIC(8,3),
     major_flood_level_m NUMERIC(8,3),
+    -- threshold ordering constraint
+    -- prevents bad data where minor flood level is set higher than major flood level
+    CONSTRAINT chk_flood_levels CHECK (
+        alert_level_m < minor_flood_level_m
+        AND minor_flood_level_m < major_flood_level_m
+    ),
     gate_status     dam_gate_status DEFAULT 'CLOSED',
     discharge_rate_m3s  NUMERIC(10,3),
     last_updated    TIMESTAMPTZ DEFAULT NOW(),
