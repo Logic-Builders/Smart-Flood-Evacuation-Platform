@@ -63,9 +63,11 @@ func (h *ReportHandler) Submit(c *gin.Context) {
 			Severity:    report.Severity,
 			Description: report.Description,
 			Status:      string(report.ValidationStatus),
-			Latitude:    report.Location.Lat,
-			Longitude:   report.Location.Lng,
-			ExpiresAt:   report.ExpiresAt.Format("2006-01-02T15:04:05Z"),
+			Location: dto.LocationResponse{
+				Latitude:  report.Location.Lat,
+				Longitude: report.Location.Lng,
+			},
+			ExpiresAt: report.ExpiresAt.Format("2006-01-02T15:04:05Z"),
 		},
 	})
 }
@@ -92,9 +94,11 @@ func (h *ReportHandler) GetActive(c *gin.Context) {
 			Severity:    r.Severity,
 			Description: r.Description,
 			Status:      string(r.ValidationStatus),
-			Latitude:    r.Location.Lat,
-			Longitude:   r.Location.Lng,
-			ExpiresAt:   r.ExpiresAt.Format("2006-01-02T15:04:05Z"),
+			Location: dto.LocationResponse{
+				Latitude:  r.Location.Lat,
+				Longitude: r.Location.Lng,
+			},
+			ExpiresAt: r.ExpiresAt.Format("2006-01-02T15:04:05Z"),
 		})
 	}
 
@@ -123,9 +127,11 @@ func (h *ReportHandler) GetPending(c *gin.Context) {
 			Severity:    r.Severity,
 			Description: r.Description,
 			Status:      string(r.ValidationStatus),
-			Latitude:    r.Location.Lat,
-			Longitude:   r.Location.Lng,
-			ExpiresAt:   r.ExpiresAt.Format("2006-01-02T15:04:05Z"),
+			Location: dto.LocationResponse{
+				Latitude:  r.Location.Lat,
+				Longitude: r.Location.Lng,
+			},
+			ExpiresAt: r.ExpiresAt.Format("2006-01-02T15:04:05Z"),
 		})
 	}
 
@@ -133,7 +139,6 @@ func (h *ReportHandler) GetPending(c *gin.Context) {
 		"success": true,
 		"data":    gin.H{"reports": response},
 	})
-
 }
 
 // Approve handles PATCH/api/v1/admin/reports/:id/approve
