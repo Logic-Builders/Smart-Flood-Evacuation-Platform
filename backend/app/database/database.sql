@@ -1,3 +1,4 @@
+-- 1. Safe Rest
 DROP SCHEMA IF EXISTS flood_system CASCADE;
 DROP TYPE IF EXISTS flood_severity CASCADE;
 DROP TYPE IF EXISTS report_type CASCADE;
@@ -9,9 +10,13 @@ DROP TYPE IF EXISTS route_type CASCADE;
 DROP TYPE IF EXISTS alert_type CASCADE;
 DROP TYPE IF EXISTS delivery_channel CASCADE;
 DROP TYPE IF EXISTS delivery_status CASCADE;
+
+-- 2. extensions and schema
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE SCHEMA IF NOT EXISTS flood_system;
 SET search_path TO flood_system, public;
+
+-- 3. enums
 CREATE TYPE flood_severity AS ENUM ('NORMAL', 'WATCH', 'WARNING', 'EXTREME');
 CREATE TYPE report_type AS ENUM (
     'FLOODED_ROAD',
@@ -60,6 +65,8 @@ CREATE TYPE delivery_status AS ENUM (
     'SENT',
     'FAILED'
 );
+
+-- 4. tables
 CREATE TABLE flood_system.users (
     user_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email           VARCHAR(255) NOT NULL UNIQUE,
@@ -67,7 +74,8 @@ CREATE TABLE flood_system.users (
     password_hash   TEXT NOT NULL,
     role            user_role NOT NULL DEFAULT 'PUBLIC',
     last_known_location GEOMETRY(Point, 4326),
-    phone_number    VARCHAR(20),
+   -- phone format validation — rejects non-numeric or badly formatted numbers
+    phone_number        VARCHAR(20) CHECK (phone_number ~ '^\+?[0-9\s\-]{7,20}$'),
     is_active       BOOLEAN DEFAULT TRUE,
     created_at      TIMESTAMPTZ DEFAULT NOW(),
     updated_at      TIMESTAMPTZ DEFAULT NOW()
