@@ -4,14 +4,14 @@ import styles from './LoginScreen.module.css';
 
 export const LoginScreen = () => {
   const { login, error } = useAuth();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = () => {
     setIsLoading(true);
     setTimeout(() => {
-      login(username, password);
+      login(email, password);
       setIsLoading(false);
     }, 200);
   };
@@ -45,11 +45,12 @@ export const LoginScreen = () => {
         <div className={styles.loginLabel}>Password</div>
         <input
           className={styles.loginInput}
-          type="password"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          type="text"
+          placeholder="admin@flood.lk"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           onKeyPress={handleKeyPress}
+          autoComplete="off"
         />
         <button
           className={styles.loginBtn}

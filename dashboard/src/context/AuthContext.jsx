@@ -1,25 +1,34 @@
 import React, { createContext, useState, useContext } from 'react';
 
 const AuthContext = createContext();
+const BASE_URL = "http://localhost:8080";
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [error, setError] = useState('');
 
-  const USERS = {
-    admin1: 'admin123',
-    admin2: 'flood2024',
-  };
-
-  const login = (username, password) => {
+  const login = async (email, password) => {
     setError('');
-    if (USERS[username] && USERS[username] === password) {
-      setIsAuthenticated(true);
-      setCurrentUser(username);
-      return true;
-    } else {
-      setError('Invalid credentials. Try admin1 / admin123');
+    try {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setIsAuthenticated(true);
+        setCurrentUser(email);
+        setToken(data.token);
+        return true;
+      } else {
+        setError(data.error || 'Invalid credentials');
+        return false;
+      }
+    } catch (err) {
+      setError('Cannot connect to server');
       return false;
     }
   };
@@ -27,11 +36,12 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsAuthenticated(false);
     setCurrentUser(null);
+    setToken(null);
     setError('');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, currentUser, error, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, currentUser, token, error, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
