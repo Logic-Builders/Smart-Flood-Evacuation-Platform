@@ -502,6 +502,8 @@ VALUES (
     TRUE,
     TRUE
 );
+
+-- alert_level_m must be < minor_flood_level_m < major_flood_level_m (enforced by CHECK)
 INSERT INTO flood_system.dam_stations (
     station_name, river_name, location, alert_level_m, minor_flood_level_m, major_flood_level_m, gate_status
 )
@@ -514,6 +516,9 @@ VALUES (
     18.0,
     'CLOSED'::dam_gate_status
 );
+
+-- A-B-C-D mock road graph matching routing_service.go
+-- ST_MakePoint takes (lng, lat) — longitude first
 INSERT INTO flood_system.road_segments (road_name, start_point, end_point, geometry, condition, flood_risk, hazard_score, risk_weight)
 VALUES
     ('A-B', ST_SetSRID(ST_MakePoint(79.8612, 6.9271), 4326), ST_SetSRID(ST_MakePoint(79.8502, 6.9376), 4326),
