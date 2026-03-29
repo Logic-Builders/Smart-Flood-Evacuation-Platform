@@ -122,10 +122,17 @@ CREATE TABLE flood_system.road_segments (
     risk_weight     NUMERIC(10,4) DEFAULT 1.0,
     last_updated    TIMESTAMPTZ DEFAULT NOW()
 );
+
 CREATE INDEX idx_roads_geometry   ON flood_system.road_segments USING GIST(geometry);
 CREATE INDEX idx_roads_start      ON flood_system.road_segments USING GIST(start_point);
 CREATE INDEX idx_roads_end        ON flood_system.road_segments USING GIST(end_point);
 CREATE INDEX idx_roads_condition  ON flood_system.road_segments(condition);
+-- partial index for PASSABLE roads
+-- road_repository.go always filters WHERE condition = 'PASSABLE'
+-- faster than a full index because it only indexes rows that actually get queried
+CREATE INDEX idx_roads_passable  ON flood_system.road_segments(segment_id)
+    WHERE condition = 'PASSABLE';
+
 CREATE TABLE flood_system.hazard_reports (
     report_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     reporter_id     UUID NOT NULL REFERENCES flood_system.users(user_id) ON DELETE CASCADE,
