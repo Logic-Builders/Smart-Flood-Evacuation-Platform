@@ -183,6 +183,8 @@ CREATE TABLE flood_system.dam_stations (
     ),
     gate_status     dam_gate_status DEFAULT 'CLOSED',
     discharge_rate_m3s  NUMERIC(10,3),
+    start_node_id   UUID,
+    end_node_id     UUID,
     last_updated    TIMESTAMPTZ DEFAULT NOW(),
     is_active       BOOLEAN DEFAULT TRUE
 );
@@ -529,3 +531,20 @@ VALUES
      ST_MakeLine(ST_MakePoint(79.8502, 6.9376), ST_MakePoint(79.8550, 6.9450)), 'PASSABLE', 0.1, 0.1, 1.0),
     ('C-D', ST_SetSRID(ST_MakePoint(79.8700, 6.9401), 4326), ST_SetSRID(ST_MakePoint(79.8550, 6.9450), 4326),
      ST_MakeLine(ST_MakePoint(79.8700, 6.9401), ST_MakePoint(79.8550, 6.9450)), 'PASSABLE', 0.1, 0.1, 2.0);
+
+     WITH unique_points AS (
+    SELECT DISTINCT start_point as geom FROM flood_system.road_segments
+    UNION
+    SELECT DISTINCT end_point as geom FROM flood_system.road_segments
+    ),
+    numbered AS (
+        SELECT geom, gen_random_uuid() as node_id FROM unique_points
+    )
+    UPDATE flood_system.road_segments rs
+    SET 
+        start_node_id = n1.node_id,
+        end_node_id = n2.node_id
+    FROM numbered n1, numbered n2
+    WHERE ST_Equals(rs.start_point, n1.geom)
+    AND ST_Equals(rs.end_point, n2.geom);
+
