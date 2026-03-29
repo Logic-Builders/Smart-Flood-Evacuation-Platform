@@ -270,6 +270,7 @@ CREATE TABLE flood_system.route_plans (
 );
 CREATE INDEX idx_routes_user     ON flood_system.route_plans(user_id);
 CREATE INDEX idx_routes_geometry ON flood_system.route_plans USING GIST(route_geometry);
+
 CREATE TABLE flood_system.audit_log (
     log_id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     action_type     VARCHAR(100) NOT NULL,
@@ -284,6 +285,7 @@ CREATE TABLE flood_system.audit_log (
 CREATE INDEX idx_audit_performed_by ON flood_system.audit_log(performed_by);
 CREATE INDEX idx_audit_performed_at ON flood_system.audit_log(performed_at DESC);
 CREATE INDEX idx_audit_target       ON flood_system.audit_log(target_table, target_id);
+
 CREATE TABLE flood_system.cache_snapshots (
     snapshot_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     bounding_box    GEOMETRY(Polygon, 4326) NOT NULL,
@@ -294,6 +296,8 @@ CREATE TABLE flood_system.cache_snapshots (
 );
 CREATE INDEX idx_cache_bbox  ON flood_system.cache_snapshots USING GIST(bounding_box);
 CREATE INDEX idx_cache_valid ON flood_system.cache_snapshots(is_valid, expires_at);
+
+-- 5. triggers and functions
 CREATE OR REPLACE FUNCTION flood_system.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -301,12 +305,29 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE TRIGGER trigger_users_updated_at
     BEFORE UPDATE ON flood_system.users
     FOR EACH ROW EXECUTE FUNCTION flood_system.update_updated_at_column();
+
 CREATE TRIGGER trigger_zones_updated_at
     BEFORE UPDATE ON flood_system.flood_risk_zones
     FOR EACH ROW EXECUTE FUNCTION flood_system.update_updated_at_column();
+
+-- Computes expires_at = submitted_at + ttl on every insert/update
+CREATE OR REPLACE FUNCTION flood_system.set_report_expiry()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.expires_at := NEW.submitted_at + NEW.ttl;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_set_report_expiry
+    BEFORE INSERT OR UPDATE OF ttl, submitted_at
+    ON flood_system.hazard_reports
+    FOR EACH ROW EXECUTE FUNCTION flood_system.set_report_expiry();
+      
 CREATE OR REPLACE FUNCTION flood_system.archive_expired_reports()
 RETURNS void AS $$
 BEGIN
