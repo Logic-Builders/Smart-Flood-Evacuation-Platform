@@ -327,7 +327,22 @@ CREATE TRIGGER trigger_set_report_expiry
     BEFORE INSERT OR UPDATE OF ttl, submitted_at
     ON flood_system.hazard_reports
     FOR EACH ROW EXECUTE FUNCTION flood_system.set_report_expiry();
-      
+
+-- zone version auto-increment trigger
+-- version increments on every update so the backend can detect concurrent changes
+CREATE OR REPLACE FUNCTION flood_system.increment_zone_version()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.version := OLD.version + 1;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_zone_version
+    BEFORE UPDATE ON flood_system.flood_risk_zones
+    FOR EACH ROW EXECUTE FUNCTION flood_system.increment_zone_version();
+
+-- 6. maintainance function
 CREATE OR REPLACE FUNCTION flood_system.archive_expired_reports()
 RETURNS void AS $$
 BEGIN
