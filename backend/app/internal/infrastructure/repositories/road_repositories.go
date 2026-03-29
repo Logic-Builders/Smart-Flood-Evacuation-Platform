@@ -17,12 +17,12 @@ func NewPostgresRoadRepository(pool *pgxpool.Pool) *PostgresRoadRepository {
 
 func (r *PostgresRoadRepository) FindAllPassable() ([]*domain.RoadSegment, error) {
 	query := `
-		SELECT	segment_id, condition, flood_risk, hazard_score,
-				ST_X(start_point) as start_lng, ST_Y(start_point) as start_lat,
-				ST_X(end_point) as end_lng, ST_Y(end_point) as end_lat
-		FROM flood_system.road_segments
-		WHERE condition = 'PASSABLE'		
-	`
+    SELECT segment_id, start_node_id, end_node_id, condition, flood_risk, hazard_score,
+           ST_X(start_point) as start_lng, ST_Y(start_point) as start_lat,
+           ST_X(end_point) as end_lng, ST_Y(end_point) as end_lat
+    FROM flood_system.road_segments
+    WHERE condition = 'PASSABLE'
+`
 
 	rows, err := r.pool.Query(context.Background(), query)
 	if err != nil {
@@ -35,6 +35,8 @@ func (r *PostgresRoadRepository) FindAllPassable() ([]*domain.RoadSegment, error
 		s := &domain.RoadSegment{}
 		err := rows.Scan(
 			&s.ID,
+			&s.StartNodeID,
+			&s.EndNodeID,
 			&s.Condition,
 			&s.FloodRisk,
 			&s.HazardScore,

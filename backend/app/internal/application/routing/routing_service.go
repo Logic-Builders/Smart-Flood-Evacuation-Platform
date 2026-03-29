@@ -31,7 +31,7 @@ func (s *RoutingService) GetRoute(segments []domain.RoadSegment, reports []domai
 
 	for _, seg := range segments {
 		g.AddNode(graph.Node{
-			ID:  seg.ID.String(),
+			ID:  seg.StartNodeID.String(),
 			Lat: seg.StartPoint.Lat,
 			Lng: seg.StartPoint.Lng,
 		})
@@ -52,7 +52,7 @@ func (s *RoutingService) GetRoute(segments []domain.RoadSegment, reports []domai
 		segReports := filterReportsForSegment(reports, seg)
 		weight := s.riskEvaluator.ComputeWeight(seg, floodRisk, segReports)
 
-		g.AddEdge(seg.ID.String(), graph.Edge{
+		g.AddEdge(seg.StartNodeID.String(), graph.Edge{
 			To:     seg.EndNodeID.String(),
 			Weight: weight,
 		})

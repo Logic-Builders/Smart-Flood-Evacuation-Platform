@@ -36,9 +36,8 @@ func main() {
 
 	floodAdaptor := external.NewMockFloodAdaptor()
 	routingService := routing.NewRoutingService(floodAdaptor)
-	routeHandler := handlers.NewRouteHandler(routingService)
-
-	_ = repositories.NewPostgresRoadRepository(pool)
+	roadRepo := repositories.NewPostgresRoadRepository(pool)
+	routeHandler := handlers.NewRouteHandler(routingService, roadRepo)
 	floodZoneRepo := repositories.NewPostgresFloodZoneRepository(pool)
 	floodZoneHandler := handlers.NewFloodZoneHandler(floodZoneRepo)
 
