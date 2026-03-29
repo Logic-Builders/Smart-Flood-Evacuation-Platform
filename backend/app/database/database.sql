@@ -83,6 +83,7 @@ CREATE TABLE flood_system.users (
 CREATE INDEX idx_users_role     ON flood_system.users(role);
 CREATE INDEX idx_users_email    ON flood_system.users(email);
 CREATE INDEX idx_users_location ON flood_system.users USING GIST(last_known_location);
+
 CREATE TABLE flood_system.flood_risk_zones (
     zone_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     gauge_id        VARCHAR(100),
@@ -90,6 +91,7 @@ CREATE TABLE flood_system.flood_risk_zones (
     description     TEXT,
     severity        flood_severity NOT NULL,
     confidence_score NUMERIC(4,3) DEFAULT 0.6 NOT NULL CHECK (confidence_score BETWEEN 0.0 AND 1.0),
+    -- Call ST_AsGeoJSON(geometry) in flood_zone_repository.go to get boundary as parseable GeoJSON
     geometry        GEOMETRY(Polygon, 4326) NOT NULL,
     is_active       BOOLEAN DEFAULT TRUE,
     data_source     VARCHAR(100),
@@ -108,6 +110,7 @@ CREATE TABLE flood_system.road_segments (
     road_name       VARCHAR(200),
     osm_id          BIGINT UNIQUE,
     geometry        GEOMETRY(LineString, 4326) NOT NULL,
+    -- Use ST_X(start_point) and ST_Y(start_point) to extract lng/lat in road_repository.go
     start_point     GEOMETRY(Point, 4326),
     end_point       GEOMETRY(Point, 4326),
     length_meters   NUMERIC(10,2),
