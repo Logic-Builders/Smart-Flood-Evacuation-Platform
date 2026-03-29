@@ -360,6 +360,13 @@ BEGIN
     WHERE is_active = TRUE
       AND expires_at IS NOT NULL
       AND expires_at < NOW();
+    -- expired row cleanup
+    -- routes expire in 15 min, cache in 5 min — without this they pile up indefinitely
+    DELETE FROM flood_system.route_plans
+    WHERE expires_at < NOW();
+    DELETE FROM flood_system.cache_snapshots
+    WHERE expires_at < NOW();
+   
 END;
 $$ LANGUAGE plpgsql;
 CREATE VIEW flood_system.active_flood_zones AS
