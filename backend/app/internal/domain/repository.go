@@ -10,6 +10,10 @@ type ReportRepository interface {
 	UpdateStatus(id uuid.UUID, status ValidationStatus) error
 }
 
+type UserRepository interface {
+	FindByEmail(email string) (*User, error)
+}
+
 type RoadRepository interface {
 	FindAllPassable() ([]*RoadSegment, error)
 }

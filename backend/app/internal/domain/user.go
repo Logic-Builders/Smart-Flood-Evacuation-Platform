@@ -11,9 +11,10 @@ const (
 )
 
 type User struct {
-	ID    uuid.UUID
-	Email string
-	Role  UserRole
+	ID           uuid.UUID
+	Email        string
+	PasswordHash string
+	Role         UserRole
 }
 
 func (u *User) IsAdmin() bool {

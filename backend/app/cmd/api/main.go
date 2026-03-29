@@ -31,7 +31,8 @@ func main() {
 	reportService := reports.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
 
-	authHandler := handlers.NewAuthHandler()
+	userRepo := repositories.NewPostgresUserRepository(pool)
+	authHandler := handlers.NewAuthHandler(userRepo)
 
 	floodAdaptor := external.NewMockFloodAdaptor()
 	routingService := routing.NewRoutingService(floodAdaptor)
