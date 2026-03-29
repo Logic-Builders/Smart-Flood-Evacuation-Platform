@@ -201,6 +201,7 @@ CREATE TABLE flood_system.weather_data (
 );
 CREATE INDEX idx_weather_area ON flood_system.weather_data USING GIST(coverage_area);
 CREATE INDEX idx_weather_time ON flood_system.weather_data(forecast_time);
+
 CREATE TABLE flood_system.shelters (
     shelter_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name            VARCHAR(200) NOT NULL,
@@ -217,6 +218,7 @@ CREATE TABLE flood_system.shelters (
     has_water       BOOLEAN DEFAULT FALSE
 );
 CREATE INDEX idx_shelters_location ON flood_system.shelters USING GIST(location);
+
 CREATE TABLE flood_system.alerts (
     alert_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title           VARCHAR(300) NOT NULL,
@@ -230,8 +232,10 @@ CREATE TABLE flood_system.alerts (
     is_active       BOOLEAN DEFAULT TRUE,
     related_dam_id  UUID REFERENCES flood_system.dam_stations(station_id)
 );
+
 CREATE INDEX idx_alerts_area   ON flood_system.alerts USING GIST(target_area);
 CREATE INDEX idx_alerts_active ON flood_system.alerts(is_active, published_at DESC);
+
 CREATE TABLE flood_system.alert_deliveries (
     delivery_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     alert_id        UUID NOT NULL REFERENCES flood_system.alerts(alert_id) ON DELETE CASCADE,
@@ -242,6 +246,7 @@ CREATE TABLE flood_system.alert_deliveries (
     delivery_status delivery_status DEFAULT 'PENDING'::delivery_status NOT NULL,
     UNIQUE(alert_id, user_id)
 );
+
 CREATE INDEX idx_deliveries_user  ON flood_system.alert_deliveries(user_id);
 CREATE INDEX idx_deliveries_alert ON flood_system.alert_deliveries(alert_id);
 CREATE TABLE flood_system.route_plans (
@@ -252,6 +257,7 @@ CREATE TABLE flood_system.route_plans (
     start_point     GEOMETRY(Point, 4326),
     end_point       GEOMETRY(Point, 4326),
     route_geometry  GEOMETRY(LineString, 4326),
+    -- path_nodes matches Go's RouteResult.Path []string — ordered node IDs from A* algorithm
     path_nodes      TEXT[],
     total_cost      NUMERIC(10,4),
     risk_score      NUMERIC(5,2),
