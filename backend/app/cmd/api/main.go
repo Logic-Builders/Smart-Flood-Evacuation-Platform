@@ -37,6 +37,9 @@ func main() {
 	routingService := routing.NewRoutingService(floodAdaptor)
 	routeHandler := handlers.NewRouteHandler(routingService)
 
+	floodZoneRepo := repositories.NewMockFloodZoneRepository()
+	floodZoneHandler := handlers.NewFloodZoneHandler(floodZoneRepo)
+
 	//router
 	router := gin.Default()
 
@@ -54,6 +57,7 @@ func main() {
 		v1.POST("/reports", reportHandler.Submit)
 		v1.GET("/reports/active", reportHandler.GetActive)
 		v1.GET("/route", routeHandler.GetRoute)
+		v1.GET("/flood-zones", floodZoneHandler.GetZones)
 	}
 
 	// admin routes - protected
