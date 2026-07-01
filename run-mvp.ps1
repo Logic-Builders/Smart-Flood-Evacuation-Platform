@@ -6,7 +6,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot
 Start-Sleep -Seconds 3
 
 Write-Host "Starting frontend on http://localhost:3000 ..."
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend'; npm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend'; npm run build; npx serve dist -l 3000"
 
 Write-Host ""
 Write-Host "MVP ready:"

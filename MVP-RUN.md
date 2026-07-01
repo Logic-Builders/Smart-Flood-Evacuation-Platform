@@ -16,11 +16,16 @@ Admin login: `admin` / `admin123`
 
 ## 2. Start frontend (new terminal)
 
+From the **project root** (not `backend\app`):
+
 ```powershell
 cd frontend
 npm install
-npm run dev
+npm run build
+npx serve dist -l 3000
 ```
+
+> If `npm run dev` crashes on your PC, use `build` + `serve` above instead.
 
 App: http://localhost:3000
 
