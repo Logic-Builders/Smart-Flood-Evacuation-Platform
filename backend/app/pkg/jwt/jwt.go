@@ -7,7 +7,14 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var secretKey = []byte("secret-key-change-this")
+var secretKey []byte
+
+func Init(secret string) {
+	if secret == "" {
+		secret = "dev-secret-change-in-production"
+	}
+	secretKey = []byte(secret)
+}
 
 type Claims struct {
 	UserID string `json:"user_id"`
@@ -27,7 +34,6 @@ func GenerateToken(userID string, role string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(secretKey)
-
 }
 
 func ValidateToken(tokenString string) (*Claims, error) {
@@ -44,7 +50,7 @@ func ValidateToken(tokenString string) (*Claims, error) {
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return nil, errors.New("Invalid token")
+		return nil, errors.New("invalid token")
 	}
 
 	return claims, nil

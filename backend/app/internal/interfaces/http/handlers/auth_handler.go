@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/logicbuilders/flood-evacuation-backend/config"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/dto"
 	jwtutil "github.com/logicbuilders/flood-evacuation-backend/pkg/jwt"
 	"golang.org/x/crypto/bcrypt"
@@ -15,10 +16,10 @@ type AuthHandler struct {
 	adminID           string
 }
 
-func NewAuthHandler() *AuthHandler {
-	hash, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+func NewAuthHandler(cfg *config.Config) *AuthHandler {
+	hash, _ := bcrypt.GenerateFromPassword([]byte(cfg.AdminPassword), bcrypt.DefaultCost)
 	return &AuthHandler{
-		adminUsername:     "admin",
+		adminUsername:     cfg.AdminUsername,
 		adminPasswordHash: string(hash),
 		adminID:           "admin-001",
 	}
@@ -52,5 +53,4 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		Token: token,
 		Role:  "ADMIN",
 	})
-
 }

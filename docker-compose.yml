@@ -1,0 +1,32 @@
+services:
+  api:
+    build:
+      context: ./backend/app
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      PORT: "8080"
+      APP_ENV: production
+    expose:
+      - "8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ""
+    ports:
+      - "${WEB_PORT:-80}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

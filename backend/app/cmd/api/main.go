@@ -12,6 +12,7 @@ import (
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/handlers"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/middleware"
+	jwtutil "github.com/logicbuilders/flood-evacuation-backend/pkg/jwt"
 )
 
 func main() {
@@ -20,19 +21,24 @@ func main() {
 	}
 
 	cfg := config.Load()
+	jwtutil.Init(cfg.JWTSecret)
+
+	if cfg.IsProduction() {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	reportRepo := repositories.NewMockReportRepository()
 	reportService := reports.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
 
-	authHandler := handlers.NewAuthHandler()
+	authHandler := handlers.NewAuthHandler(cfg)
 
 	floodAdaptor := external.NewMockFloodAdaptor()
 	routingService := routing.NewRoutingService(floodAdaptor)
 	routeHandler := handlers.NewRouteHandler(routingService, reportService)
 
 	router := gin.Default()
-	router.Use(middleware.CORS())
+	router.Use(middleware.CORS(cfg.CORSOrigin))
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -59,7 +65,7 @@ func main() {
 		admin.PATCH("/reports/:id/reject", reportHandler.Reject)
 	}
 
-	log.Printf("Server starting on port %s", cfg.Port)
+	log.Printf("Server starting on port %s (env=%s)", cfg.Port, cfg.AppEnv)
 	if err := router.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}

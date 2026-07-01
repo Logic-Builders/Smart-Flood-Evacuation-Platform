@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, CircleMarker, useMapEvents } from 'react-leaflet';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   getNetwork, getRoute, getActiveReports, submitReport,
   login, getPendingReports, approveReport, rejectReport,
@@ -8,24 +8,99 @@ import {
 
 const CENTER = [7.297, 81.672];
 
-const startIcon = new L.Icon({
+const startIcon = L.icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
   iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
 });
-const endIcon = new L.Icon({
+const endIcon = L.icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
   iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
 });
 
-function MapClickHandler({ mode, onPick }) {
-  useMapEvents({
-    click(e) {
-      if (mode) onPick({ lat: e.latlng.lat, lng: e.latlng.lng });
-    },
-  });
-  return null;
+function FloodMap({ network, routeCoords, start, end, activeReports, pickMode, onPick }) {
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const layersRef = useRef({ roads: [], route: null, start: null, end: null, hazards: [] });
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstance.current) return;
+    mapInstance.current = L.map(mapRef.current).setView(CENTER, 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+    }).addTo(mapInstance.current);
+
+    mapInstance.current.on('click', (e) => {
+      if (pickMode) onPick({ lat: e.latlng.lat, lng: e.latlng.lng });
+    });
+
+    return () => {
+      mapInstance.current?.remove();
+      mapInstance.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    const handler = (e) => {
+      if (pickMode) onPick({ lat: e.latlng.lat, lng: e.latlng.lng });
+    };
+    map.on('click', handler);
+    return () => map.off('click', handler);
+  }, [pickMode, onPick]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    layersRef.current.roads.forEach((l) => map.removeLayer(l));
+    layersRef.current.roads = (network.segments || []).map((s) =>
+      L.polyline([s.start, s.end], { color: '#64748b', weight: 4, opacity: 0.7 }).addTo(map)
+    );
+  }, [network]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    if (layersRef.current.route) map.removeLayer(layersRef.current.route);
+    if (routeCoords.length > 0) {
+      layersRef.current.route = L.polyline(routeCoords, { color: '#22c55e', weight: 6 }).addTo(map);
+    } else {
+      layersRef.current.route = null;
+    }
+  }, [routeCoords]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    if (layersRef.current.start) map.removeLayer(layersRef.current.start);
+    layersRef.current.start = start
+      ? L.marker([start.lat, start.lng], { icon: startIcon }).addTo(map).bindPopup('Start')
+      : null;
+  }, [start]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    if (layersRef.current.end) map.removeLayer(layersRef.current.end);
+    layersRef.current.end = end
+      ? L.marker([end.lat, end.lng], { icon: endIcon }).addTo(map).bindPopup('End')
+      : null;
+  }, [end]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    layersRef.current.hazards.forEach((m) => map.removeLayer(m));
+    layersRef.current.hazards = activeReports.map((r) =>
+      L.circleMarker([r.latitude, r.longitude], {
+        radius: 10, color: '#ef4444', fillColor: '#f87171', fillOpacity: 0.8,
+      }).addTo(map).bindPopup(`${r.report_type} (sev ${r.severity})`)
+    );
+  }, [activeReports]);
+
+  return <div ref={mapRef} style={{ height: '100%', width: '100%' }} />;
 }
 
 export default function App() {
@@ -44,37 +119,28 @@ export default function App() {
     latitude: 7.297, longitude: 81.672, report_type: 'FLOODED_ROAD', severity: 3, description: '',
   });
 
-  const roadLines = useMemo(() =>
-    (network.segments || []).map((s, i) => ({
-      key: i,
-      positions: [s.start, s.end],
-    })), [network]);
-
   const refresh = useCallback(async () => {
     try {
       const [net, reports] = await Promise.all([getNetwork(), getActiveReports()]);
       setNetwork(net);
       setActiveReports(reports);
-    } catch (e) {
-      setStatus('Cannot reach API. Start backend on :8080');
+    } catch {
+      setStatus('Cannot reach API. Start backend: cd backend\\app && go run .\\cmd\\api\\main.go');
     }
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const handlePick = (pt) => {
+  const handlePick = useCallback((pt) => {
     if (pickMode === 'start') setStart(pt);
     if (pickMode === 'end') setEnd(pt);
     if (pickMode === 'report') setReportForm((f) => ({ ...f, latitude: pt.lat, longitude: pt.lng }));
     setPickMode(null);
     setStatus(pickMode === 'report' ? 'Report location set on map' : `${pickMode} point set`);
-  };
+  }, [pickMode]);
 
   const calcRoute = async () => {
-    if (!start || !end) {
-      setStatus('Set start and end points first');
-      return;
-    }
+    if (!start || !end) { setStatus('Set start and end points first'); return; }
     try {
       const data = await getRoute(start, end);
       setRouteCoords(data.coordinates || []);
@@ -101,8 +167,7 @@ export default function App() {
       setToken(data.token);
       localStorage.setItem('adminToken', data.token);
       setStatus('Admin logged in');
-      const pending = await getPendingReports(data.token);
-      setPendingReports(pending);
+      setPendingReports(await getPendingReports(data.token));
     } catch {
       setStatus('Login failed');
     }
@@ -110,8 +175,7 @@ export default function App() {
 
   const loadPending = async () => {
     if (!token) return;
-    const pending = await getPendingReports(token);
-    setPendingReports(pending);
+    setPendingReports(await getPendingReports(token));
   };
 
   const handleApprove = async (id) => {
@@ -132,7 +196,6 @@ export default function App() {
       <aside className="sidebar">
         <h1>Safe Flood Evacuation</h1>
         <p>MVP demo — Ampara District</p>
-
         <div className="tabs">
           <button className={tab === 'route' ? 'active' : ''} onClick={() => setTab('route')}>Route</button>
           <button className={tab === 'report' ? 'active' : ''} onClick={() => setTab('report')}>Report</button>
@@ -141,7 +204,7 @@ export default function App() {
 
         {tab === 'route' && (
           <div className="panel">
-            <p className="hint">Click buttons then tap map to set points</p>
+            <p className="hint">Click button then tap map to set points</p>
             <button className="secondary" onClick={() => setPickMode('start')}>Pick Start (green)</button>
             <button className="secondary" onClick={() => setPickMode('end')}>Pick End (red)</button>
             <div className="status">
@@ -173,7 +236,6 @@ export default function App() {
               <textarea rows={3} value={reportForm.description}
                 onChange={(e) => setReportForm({ ...reportForm, description: e.target.value })} />
             </div>
-            <div className="status">Lat: {reportForm.latitude.toFixed(4)}, Lng: {reportForm.longitude.toFixed(4)}</div>
             <button className="primary" onClick={sendReport}>Submit Report</button>
           </div>
         )}
@@ -182,14 +244,10 @@ export default function App() {
           <div className="panel">
             {!token ? (
               <>
-                <div>
-                  <label>Username</label>
-                  <input value={loginForm.username} onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })} />
-                </div>
-                <div>
-                  <label>Password</label>
-                  <input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} />
-                </div>
+                <div><label>Username</label>
+                  <input value={loginForm.username} onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })} /></div>
+                <div><label>Password</label>
+                  <input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} /></div>
                 <button className="primary" onClick={doLogin}>Login</button>
               </>
             ) : (
@@ -200,7 +258,6 @@ export default function App() {
                   <div key={r.id} className="report-card">
                     <h4>{r.report_type} — severity {r.severity}</h4>
                     <p>{r.description || 'No description'}</p>
-                    <small>{r.latitude.toFixed(4)}, {r.longitude.toFixed(4)}</small>
                     <div className="report-actions">
                       <button className="success" onClick={() => handleApprove(r.id)}>Approve</button>
                       <button className="danger" onClick={() => handleReject(r.id)}>Reject</button>
@@ -213,29 +270,18 @@ export default function App() {
         )}
 
         {status && <p className="status" style={{ marginTop: '1rem' }}>{status}</p>}
-        <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '1rem' }}>
-          Active hazards on map: {activeReports.length}
-        </p>
       </aside>
 
       <main className="map-wrap">
-        <MapContainer center={CENTER} zoom={13} style={{ height: '100%', width: '100%' }}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
-          <MapClickHandler mode={pickMode} onPick={handlePick} />
-          {roadLines.map((line) => (
-            <Polyline key={line.key} positions={line.positions} color="#64748b" weight={4} opacity={0.7} />
-          ))}
-          {routeCoords.length > 0 && (
-            <Polyline positions={routeCoords} color="#22c55e" weight={6} />
-          )}
-          {start && <Marker position={[start.lat, start.lng]} icon={startIcon}><Popup>Start</Popup></Marker>}
-          {end && <Marker position={[end.lat, end.lng]} icon={endIcon}><Popup>End</Popup></Marker>}
-          {activeReports.map((r) => (
-            <CircleMarker key={r.id} center={[r.latitude, r.longitude]} radius={10} color="#ef4444" fillColor="#f87171" fillOpacity={0.8}>
-              <Popup>{r.report_type} (sev {r.severity})</Popup>
-            </CircleMarker>
-          ))}
-        </MapContainer>
+        <FloodMap
+          network={network}
+          routeCoords={routeCoords}
+          start={start}
+          end={end}
+          activeReports={activeReports}
+          pickMode={pickMode}
+          onPick={handlePick}
+        />
       </main>
     </div>
   );

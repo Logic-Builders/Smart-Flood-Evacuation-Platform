@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// Dev: localhost API. Docker/production: same-origin via nginx proxy.
+const API = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
 const client = axios.create({ baseURL: API });
 
