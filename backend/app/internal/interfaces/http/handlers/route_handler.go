@@ -1,64 +1,74 @@
 package handlers
+
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/application/reports"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/routing"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/domain"
-	"github.com/google/uuid"
-
+	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/data"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/dto"
 )
 
 type RouteHandler struct {
-	service *routing.RoutingService
+	service       *routing.RoutingService
+	reportService *reports.ReportService
 }
 
-func NewRouteHandler(service *routing.RoutingService) *RouteHandler {
-	return &RouteHandler{service: service}
+func NewRouteHandler(service *routing.RoutingService, reportService *reports.ReportService) *RouteHandler {
+	return &RouteHandler{service: service, reportService: reportService}
 }
 
-func (h *RouteHandler) GetRoute(c *gin.Context) {
-	startID := c.Query("start")
-	goalID := c.Query("goal")
+func (h *RouteHandler) GetNetwork(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"nodes":    data.GetDemoNodes(),
+			"segments": data.SegmentsForMap(),
+		},
+	})
+}
 
-	if startID == "" || goalID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"erros": "start and goal query params required"})
+func (h *RouteHandler) PostRoute(c *gin.Context) {
+	var req dto.RouteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "start_lat, start_lng, end_lat, end_lng required"})
 		return
 	}
 
-	//mock segments - Need to replace with DB
+	startID := data.NearestNode(req.StartLat, req.StartLng)
+	goalID := data.NearestNode(req.EndLat, req.EndLng)
 
-	segments := []domain.RoadSegment{
-		{
-			ID:         uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
-			EndNodeID:  uuid.MustParse("550e8400-e29b-41d4-a716-446655440001"),
-			StartPoint: domain.GeoPoint{Lat: 6.9271, Lng: 79.8612},
-			EndPoint:   domain.GeoPoint{Lat: 6.9350, Lng: 79.8500},
-		},
+	h.respondRoute(c, startID, goalID)
+}
 
-		{
-			ID:         uuid.MustParse("550e8400-e29b-41d4-a716-446655440001"),
-			EndNodeID:  uuid.MustParse("550e8400-e29b-41d4-a716-446655440002"),
-			StartPoint: domain.GeoPoint{Lat: 6.9350, Lng: 79.8500},
-			EndPoint:   domain.GeoPoint{Lat: 6.9450, Lng: 79.8550},
-		},
+func (h *RouteHandler) GetRoute(c *gin.Context) {
+	startLat := parseFloat(c.Query("start_lat"))
+	startLng := parseFloat(c.Query("start_lng"))
+	endLat := parseFloat(c.Query("end_lat"))
+	endLng := parseFloat(c.Query("end_lng"))
 
-		{
-			ID:         uuid.MustParse("550e8400-e29b-41d4-a716-446655440003"),
-			EndNodeID:  uuid.MustParse("550e8400-e29b-41d4-a716-446655440004"),
-			StartPoint: domain.GeoPoint{Lat: 6.9271, Lng: 79.8612},
-			EndPoint:   domain.GeoPoint{Lat: 6.9400, Lng: 79.8700},
-		},
-
-		{
-			ID:         uuid.MustParse("550e8400-e29b-41d4-a716-446655440004"),
-			EndNodeID:  uuid.MustParse("550e8400-e29b-41d4-a716-446655440002"),
-			StartPoint: domain.GeoPoint{Lat: 6.9400, Lng: 79.8700},
-			EndPoint:   domain.GeoPoint{Lat: 6.9450, Lng: 79.8550},
-		},
+	if startLat == 0 && startLng == 0 && endLat == 0 && endLng == 0 {
+		startID := c.Query("start")
+		goalID := c.Query("goal")
+		if startID == "" || goalID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "provide start_lat/start_lng/end_lat/end_lng or start/goal node ids"})
+			return
+		}
+		h.respondRoute(c, startID, goalID)
+		return
 	}
 
-	reports := []domain.HazardReport{}
+	startID := data.NearestNode(startLat, startLng)
+	goalID := data.NearestNode(endLat, endLng)
+	h.respondRoute(c, startID, goalID)
+}
+
+func (h *RouteHandler) respondRoute(c *gin.Context, startID, goalID string) {
+	segments := data.GetDemoSegments()
+	reports := h.activeReports()
 
 	result, err := h.service.GetRoute(segments, reports, startID, goalID)
 	if err != nil {
@@ -66,9 +76,39 @@ func (h *RouteHandler) GetRoute(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"path":       result.Path,
-		"total_cost": result.TotalCost,
-	})
+	coords := make([][]float64, 0, len(result.Path))
+	for _, nodeID := range result.Path {
+		lat, lng, ok := data.NodeCoords(nodeID)
+		if ok {
+			coords = append(coords, []float64{lat, lng})
+		}
+	}
 
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"path":        result.Path,
+			"coordinates": coords,
+			"total_cost":  result.TotalCost,
+			"start_node":  startID,
+			"goal_node":   goalID,
+		},
+	})
+}
+
+func (h *RouteHandler) activeReports() []domain.HazardReport {
+	active, err := h.reportService.GetActiveReports()
+	if err != nil {
+		return nil
+	}
+	out := make([]domain.HazardReport, 0, len(active))
+	for _, r := range active {
+		out = append(out, *r)
+	}
+	return out
+}
+
+func parseFloat(s string) float64 {
+	f, _ := strconv.ParseFloat(s, 64)
+	return f
 }

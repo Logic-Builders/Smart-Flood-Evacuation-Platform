@@ -22,8 +22,9 @@ func NewRoutingService(floodSource external.FloodDataSource) *RoutingService {
 }
 
 type RouteResult struct {
-	Path      []string
-	TotalCost float64
+	Path        []string
+	Coordinates [][]float64
+	TotalCost   float64
 }
 
 func (s *RoutingService) GetRoute(segments []domain.RoadSegment, reports []domain.HazardReport, startID, goalID string) (*RouteResult, error) {
@@ -31,7 +32,7 @@ func (s *RoutingService) GetRoute(segments []domain.RoadSegment, reports []domai
 
 	for _, seg := range segments {
 		g.AddNode(graph.Node{
-			ID:  seg.ID.String(),
+			ID:  seg.StartNodeID.String(),
 			Lat: seg.StartPoint.Lat,
 			Lng: seg.StartPoint.Lng,
 		})
@@ -46,13 +47,13 @@ func (s *RoutingService) GetRoute(segments []domain.RoadSegment, reports []domai
 			seg.StartPoint.Lng,
 		)
 		if err != nil {
-			floodRisk = 0.5
+			floodRisk = 0.1
 		}
 
 		segReports := filterReportsForSegment(reports, seg)
 		weight := s.riskEvaluator.ComputeWeight(seg, floodRisk, segReports)
 
-		g.AddEdge(seg.ID.String(), graph.Edge{
+		g.AddEdge(seg.StartNodeID.String(), graph.Edge{
 			To:     seg.EndNodeID.String(),
 			Weight: weight,
 		})

@@ -39,6 +39,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	err := bcrypt.CompareHashAndPassword([]byte(h.adminPasswordHash), []byte(req.Password))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		return
 	}
 
 	token, err := jwtutil.GenerateToken(h.adminID, "ADMIN")

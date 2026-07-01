@@ -15,16 +15,12 @@ import (
 )
 
 func main() {
-	// Load .env file
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, reading from environment")
 	}
 
-	// Load config
 	cfg := config.Load()
 
-	//Wire up dependencies
-	//MockRepository -> ReportService -> Report Handler
 	reportRepo := repositories.NewMockReportRepository()
 	reportService := reports.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
@@ -33,12 +29,11 @@ func main() {
 
 	floodAdaptor := external.NewMockFloodAdaptor()
 	routingService := routing.NewRoutingService(floodAdaptor)
-	routeHandler := handlers.NewRouteHandler(routingService)
+	routeHandler := handlers.NewRouteHandler(routingService, reportService)
 
-	//router
 	router := gin.Default()
+	router.Use(middleware.CORS())
 
-	//public routes
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":  "ok",
@@ -51,10 +46,11 @@ func main() {
 	{
 		v1.POST("/reports", reportHandler.Submit)
 		v1.GET("/reports/active", reportHandler.GetActive)
+		v1.GET("/network", routeHandler.GetNetwork)
+		v1.POST("/route", routeHandler.PostRoute)
 		v1.GET("/route", routeHandler.GetRoute)
 	}
 
-	// admin routes - protected
 	admin := v1.Group("/admin")
 	admin.Use(middleware.RequireAuth())
 	{
