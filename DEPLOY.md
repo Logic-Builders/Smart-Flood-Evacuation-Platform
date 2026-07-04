@@ -15,15 +15,6 @@ From the **project root**:
 copy .env.example .env
 ```
 
-Edit `.env` and change at minimum:
-
-```env
-JWT_SECRET=your-long-random-secret-here
-ADMIN_PASSWORD=your-secure-admin-password
-```
-
-`ADMIN_USERNAME` defaults to `admin`.
-
 ## 2. Build and run
 
 ```powershell
