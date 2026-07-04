@@ -13,6 +13,7 @@ import (
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/handlers"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/middleware"
 	jwtutil "github.com/logicbuilders/flood-evacuation-backend/pkg/jwt"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories/postgres"
 )
 
 func main() {
