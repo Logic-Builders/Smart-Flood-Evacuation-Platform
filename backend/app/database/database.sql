@@ -417,58 +417,6 @@ CREATE VIEW flood_system.available_shelters AS
     WHERE is_active = TRUE
       AND (current_occupancy < capacity OR capacity IS NULL);
 
--- 8. row-level security 
--- all rows in all tables via the auto-generated REST API.
-
-ALTER TABLE flood_system.users ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY users_select_own ON flood_system.users
-    FOR SELECT USING (user_id = auth.uid());
-
-CREATE POLICY users_select_admin ON flood_system.users
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM flood_system.users
-            WHERE user_id = auth.uid() AND role = 'ADMIN'
-        )
-    );
-
-ALTER TABLE flood_system.hazard_reports ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY reports_insert_any ON flood_system.hazard_reports
-    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
-CREATE POLICY reports_select_own ON flood_system.hazard_reports
-    FOR SELECT USING (reporter_id = auth.uid());
-
-CREATE POLICY reports_admin ON flood_system.hazard_reports
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM flood_system.users
-            WHERE user_id = auth.uid() AND role IN ('ADMIN', 'AUTHORITY')
-        )
-    );
-
-ALTER TABLE flood_system.alerts ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY alerts_select_all ON flood_system.alerts
-    FOR SELECT USING (is_active = TRUE);
-
-CREATE POLICY alerts_admin ON flood_system.alerts
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM flood_system.users
-            WHERE user_id = auth.uid() AND role IN ('ADMIN', 'AUTHORITY')
-        )
-    );
-
-ALTER TABLE flood_system.alert_deliveries ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY deliveries_select_own ON flood_system.alert_deliveries
-    FOR SELECT USING (user_id = auth.uid());
-
-REVOKE SELECT (password_hash) ON flood_system.users FROM anon, authenticated;
-
 -- 9. seed data
 INSERT INTO flood_system.users (email, full_name, password_hash, role)
 VALUES
