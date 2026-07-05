@@ -464,6 +464,17 @@ VALUES (
     18.0,
     'CLOSED'::dam_gate_status
 );
+CREATE TABLE flood_system.dam_releases (
+    release_id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    dam_name                VARCHAR(200) NOT NULL,
+    location                GEOMETRY(Point, 4326) NOT NULL,
+    severity                flood_severity NOT NULL,
+    affected_radius_meters  NUMERIC(10,2) NOT NULL,
+    release_time            TIMESTAMPTZ DEFAULT NOW(),
+    active                  BOOLEAN DEFAULT TRUE
+);
+CREATE INDEX idx_dam_releases_location ON flood_system.dam_releases USING GIST(location);
+CREATE INDEX idx_dam_releases_active   ON flood_system.dam_releases(active);
 
 -- A-B-C-D mock road graph matching routing_service.go
 -- ST_MakePoint takes (lng, lat) — longitude first
