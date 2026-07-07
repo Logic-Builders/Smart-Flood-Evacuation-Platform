@@ -9,6 +9,7 @@ type Config struct {
 	CORSOrigin    string
 	AdminUsername string
 	AdminPassword string
+	DatabaseURL   string // <-- new field
 }
 
 func Load() *Config {
@@ -19,6 +20,8 @@ func Load() *Config {
 		CORSOrigin:    getEnv("CORS_ORIGIN", "*"),
 		AdminUsername: getEnv("ADMIN_USERNAME", "admin"),
 		AdminPassword: getEnv("ADMIN_PASSWORD", "admin123"),
+		DatabaseURL: getEnv("DATABASE_URL", // <-- new line
+			"postgres://postgres:password@localhost:5432/flood_evacuation?sslmode=disable"),
 	}
 }
 

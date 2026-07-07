@@ -195,7 +195,6 @@ export default function App() {
     <div className="app">
       <aside className="sidebar">
         <h1>Safe Flood Evacuation</h1>
-        <p>MVP demo — Ampara District</p>
         <div className="tabs">
           <button className={tab === 'route' ? 'active' : ''} onClick={() => setTab('route')}>Route</button>
           <button className={tab === 'report' ? 'active' : ''} onClick={() => setTab('report')}>Report</button>

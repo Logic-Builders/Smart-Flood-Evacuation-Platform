@@ -19,6 +19,9 @@ type RoadRepository interface {
 	GetRoadsByArea(polygon domain.GeoPolygon) ([]*domain.RoadSegment, error)
 	GetRoadByID(id uuid.UUID) (*domain.RoadSegment, error)
 	UpdateRoadWeight(id uuid.UUID, floodRisk float64, hazardScore float64) error
+	NearestNode(lat, lng float64) (uuid.UUID, error)                                                // add
+	NodeCoords(id uuid.UUID) (lat, lng float64, err error)                                          // add
+	GetSegmentsInBoundingBox(minLat, minLng, maxLat, maxLng float64) ([]*domain.RoadSegment, error) // add
 }
 
 // UserRepository — user management

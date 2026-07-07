@@ -1,12 +1,15 @@
-version: "3.9"
-
-services:
-  db:
+db:
     image: postgis/postgis:16-3.4
     container_name: flood_db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: flood_evacuation
-    ports:
-      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      retries: 5
+volumes:
+  pgdata:
