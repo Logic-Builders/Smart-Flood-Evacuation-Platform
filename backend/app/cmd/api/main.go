@@ -9,7 +9,7 @@ import (
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/reports"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/routing"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/external"
-	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories/postgres"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/handlers"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/http/middleware"
 	jwtutil "github.com/logicbuilders/flood-evacuation-backend/pkg/jwt"
@@ -27,7 +27,13 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	reportRepo := repositories.NewMockReportRepository()
+	pool, err := postgres.NewPool(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("failed to connect to db: %v", err)
+	}
+	defer pool.Close()
+
+reportRepo := postgres.NewPostgresReportRepository(pool)
 	reportService := reports.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
 
