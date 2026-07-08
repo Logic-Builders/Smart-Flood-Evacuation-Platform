@@ -33,7 +33,7 @@ func main() {
 	}
 	defer pool.Close()
 
-reportRepo := postgres.NewPostgresReportRepository(pool)
+	reportRepo := postgres.NewPostgresReportRepository(pool)
 	reportService := reports.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
 

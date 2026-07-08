@@ -1,6 +1,7 @@
 package external
 
-type FloodDataSource interface {	GetFloodRisk(lat, lng float64) (float64, error)
+type FloodDataSource interface {
+	GetFloodRisk(lat, lng float64) (float64, error)
 }
 
 type MockFloodAdaptor struct{}
