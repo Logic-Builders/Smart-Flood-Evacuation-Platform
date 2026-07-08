@@ -18,12 +18,18 @@ type RouteRequest struct {
 
 //Backend sends ReportResponse back
 type ReportResponse struct {
-	ID          string  `json:"id"`
-	ReportType  string  `json:"report_type"`
-	Severity    int     `json:"severity"`
-	Description string  `json:"description"`
-	Status      string  `json:"status"`
-	Latitude    float64 `json:"latitude"`
-	Longitude   float64 `json:"longitude"`
-	ExpiresAt   string  `json:"expires_at"`
+	ID          string      `json:"id"`
+	ReportType  string      `json:"report_type"`
+	Severity    int         `json:"severity"`
+	Description string      `json:"description"`
+	Status      string      `json:"status"`
+	Location    LocationDTO `json:"location"`
+	ExpiresAt   string      `json:"expires_at"`
+}
+
+// LocationDTO matches the nested {latitude, longitude} shape both the dashboard
+// (Reports.jsx) and the mobile app (HazardReport type) already expect.
+type LocationDTO struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }

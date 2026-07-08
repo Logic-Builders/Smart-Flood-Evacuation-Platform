@@ -1,5 +1,5 @@
 import {
-  C, DETOUR_OFFSET_DEG, PROXIMITY_M,
+  BASE_URL, C, DETOUR_OFFSET_DEG, PROXIMITY_M,
 } from '../constants/mapConstants';
 import type {
   Coord, FloodZone, HazardReport, NavStep, RouteOption, RouteSegment,
@@ -143,6 +143,31 @@ async function fetchOSRM(waypoints: Coord[]): Promise<any> {
   return res.json();
 }
 
+// Queries the backend's own A*-based /api/v1/route, which walks the real,
+// flood-risk-weighted road graph (see routing_service.go). Its response has no
+// turn-by-turn steps/ETA, so the coordinates are used as OSRM waypoints below to
+// still get real street geometry + navigable steps, while the *path* reflects
+// the backend's risk weighting rather than a generic driving route.
+// Returns null on any failure so callers can fall back to the OSRM-only flow.
+async function fetchBackendRoute(start: Coord, end: Coord): Promise<Coord[] | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/v1/route`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        start_lat: start.latitude, start_lng: start.longitude,
+        end_lat: end.latitude, end_lng: end.longitude,
+      }),
+      signal: abortAfter(8_000),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success || !json.data?.coordinates?.length) return null;
+    return json.data.coordinates.map(([lat, lng]: number[]) => ({ latitude: lat, longitude: lng }));
+  } catch {
+    return null;
+  }
+}
+
 export async function buildSafeRoute(
   start: Coord, end: Coord, zones: FloodZone[], hazards: HazardReport[]
 ): Promise<{ safest: RouteOption; fastest: RouteOption }> {
@@ -159,26 +184,46 @@ export async function buildSafeRoute(
   let safestDur   = rawRoute.duration as number;
   let didDetour   = false;
 
-  const floodDetours: Coord[] = [];
-  for (const z of hitZones) floodDetours.push(...computeDetourWaypoints(rawCoords, z));
-  const hazardDetours = computeHazardDetourWaypoints(rawCoords, hazards);
-  const allDetours    = [...floodDetours, ...hazardDetours];
-  const deduped: Coord[] = [];
-  for (const wp of allDetours)
-    if (!deduped.some(d => distM(d, wp) < 300)) deduped.push(wp);
+  const backendWaypoints = await fetchBackendRoute(start, end);
 
-  if (deduped.length > 0) {
+  if (backendWaypoints && backendWaypoints.length > 0) {
     try {
-      const detoured = await fetchOSRM([start, ...deduped, end]);
-      if (detoured.routes?.length) {
-        const dr = detoured.routes[0];
-        safestCoords = dr.geometry.coordinates.map(([lng, lat]: number[]) => ({ latitude: lat, longitude: lng }));
-        safestSteps  = dr.legs.flatMap((l: any) => l.steps);
-        safestDist   = dr.distance;
-        safestDur    = dr.duration;
+      const backendRouted = await fetchOSRM([start, ...backendWaypoints, end]);
+      if (backendRouted.routes?.length) {
+        const br = backendRouted.routes[0];
+        safestCoords = br.geometry.coordinates.map(([lng, lat]: number[]) => ({ latitude: lat, longitude: lng }));
+        safestSteps  = br.legs.flatMap((l: any) => l.steps);
+        safestDist   = br.distance;
+        safestDur    = br.duration;
         didDetour    = true;
       }
     } catch (_) {}
+  }
+
+  // Backend unreachable/no path — fall back to the client-side flood/hazard
+  // detour heuristic against the plain OSRM route.
+  if (!didDetour) {
+    const floodDetours: Coord[] = [];
+    for (const z of hitZones) floodDetours.push(...computeDetourWaypoints(rawCoords, z));
+    const hazardDetours = computeHazardDetourWaypoints(rawCoords, hazards);
+    const allDetours    = [...floodDetours, ...hazardDetours];
+    const deduped: Coord[] = [];
+    for (const wp of allDetours)
+      if (!deduped.some(d => distM(d, wp) < 300)) deduped.push(wp);
+
+    if (deduped.length > 0) {
+      try {
+        const detoured = await fetchOSRM([start, ...deduped, end]);
+        if (detoured.routes?.length) {
+          const dr = detoured.routes[0];
+          safestCoords = dr.geometry.coordinates.map(([lng, lat]: number[]) => ({ latitude: lat, longitude: lng }));
+          safestSteps  = dr.legs.flatMap((l: any) => l.steps);
+          safestDist   = dr.distance;
+          safestDur    = dr.duration;
+          didDetour    = true;
+        }
+      } catch (_) {}
+    }
   }
 
   const safestHits = routeIntersectsZones(safestCoords, zones);

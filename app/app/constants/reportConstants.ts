@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-export const BASE_URL = 'http://10.10.11.136:8080';
+export { BASE_URL } from './env';
 
 export const ZONE_FILL: Record<string, string> = {
   NORMAL: 'rgba(52,168,83,0.15)', WATCH: 'rgba(251,188,4,0.20)',

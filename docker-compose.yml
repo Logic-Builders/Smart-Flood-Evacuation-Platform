@@ -1,4 +1,24 @@
 services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-flood_evacuation}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./backend/app/database/database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    # Loopback-only (not reachable from outside the host) — lets local dev tools/scripts
+    # (psql, import_roads.py) connect via localhost:5432 without exposing Postgres publicly.
+    ports:
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: ./backend/app
@@ -8,6 +28,10 @@ services:
     environment:
       PORT: "8080"
       APP_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-flood_evacuation}?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
     expose:
       - "8080"
     restart: unless-stopped
@@ -30,3 +54,12 @@ services:
       api:
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  # Adopts the pre-existing local dev DB volume (already has ~16k imported Ampara road
+  # segments from a prior manual `import_roads.py` run) instead of starting from empty.
+  # On a fresh machine with no such volume yet, either drop `external: true` + `name:`
+  # to let compose create a new one, or create it first: `docker volume create db_data`.
+  db_data:
+    external: true
+    name: 2b37cb9d29143e3fac966d80b37bc761eddb4f0c07ff65b247aff7c9abe6db4a

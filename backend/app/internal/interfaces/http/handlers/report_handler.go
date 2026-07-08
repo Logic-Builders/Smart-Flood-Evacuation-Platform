@@ -33,8 +33,10 @@ func (h *ReportHandler) Submit(c *gin.Context) {
 		return
 	}
 
-	//Need to replace with real JWT user ID
-	reporterID := uuid.New()
+	// The mobile app has no authenticated user accounts yet, so public submissions
+	// are attributed to a fixed, seeded "anonymous public reporter" row (see
+	// domain.AnonymousReporterID and database.sql) rather than a real JWT user ID.
+	reporterID := domain.AnonymousReporterID
 
 	//Call the service
 	report, err := h.service.SubmitReport(
@@ -63,8 +65,7 @@ func (h *ReportHandler) Submit(c *gin.Context) {
 			Severity:    report.Severity,
 			Description: report.Description,
 			Status:      string(report.ValidationStatus),
-			Latitude:    report.Location.Lat,
-			Longitude:   report.Location.Lng,
+			Location:    dto.LocationDTO{Latitude: report.Location.Lat, Longitude: report.Location.Lng},
 			ExpiresAt:   report.ExpiresAt.Format("2006-01-02T15:04:05Z"),
 		},
 	})
@@ -84,7 +85,7 @@ func (h *ReportHandler) GetActive(c *gin.Context) {
 
 	//Convert domain objects to DTOs
 
-	var response []dto.ReportResponse
+	response := []dto.ReportResponse{} // not nil, so an empty result marshals to [] not null
 	for _, r := range activeReports {
 		response = append(response, dto.ReportResponse{
 			ID:          r.ID.String(),
@@ -92,8 +93,7 @@ func (h *ReportHandler) GetActive(c *gin.Context) {
 			Severity:    r.Severity,
 			Description: r.Description,
 			Status:      string(r.ValidationStatus),
-			Latitude:    r.Location.Lat,
-			Longitude:   r.Location.Lng,
+			Location:    dto.LocationDTO{Latitude: r.Location.Lat, Longitude: r.Location.Lng},
 			ExpiresAt:   r.ExpiresAt.Format("2006-01-02T15:04:05Z"),
 		})
 	}
@@ -115,7 +115,7 @@ func (h *ReportHandler) GetPending(c *gin.Context) {
 		return
 	}
 
-	var response []dto.ReportResponse
+	response := []dto.ReportResponse{} // not nil, so an empty result marshals to [] not null
 	for _, r := range pendingReports {
 		response = append(response, dto.ReportResponse{
 			ID:          r.ID.String(),
@@ -123,8 +123,7 @@ func (h *ReportHandler) GetPending(c *gin.Context) {
 			Severity:    r.Severity,
 			Description: r.Description,
 			Status:      string(r.ValidationStatus),
-			Latitude:    r.Location.Lat,
-			Longitude:   r.Location.Lng,
+			Location:    dto.LocationDTO{Latitude: r.Location.Lat, Longitude: r.Location.Lng},
 			ExpiresAt:   r.ExpiresAt.Format("2006-01-02T15:04:05Z"),
 		})
 	}

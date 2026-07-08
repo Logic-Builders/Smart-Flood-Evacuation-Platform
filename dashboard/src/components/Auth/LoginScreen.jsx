@@ -32,11 +32,11 @@ export const LoginScreen = () => {
             <span>Admin Command Center</span>
           </div>
         </div>
-        <div className={styles.loginLabel}>Email</div>
+        <div className={styles.loginLabel}>Username</div>
         <input
           className={styles.loginInput}
-          type="email"
-          placeholder="admin@flood.lk"
+          type="text"
+          placeholder="admin"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyPress={handleKeyPress}
@@ -60,7 +60,7 @@ export const LoginScreen = () => {
         </button>
         <div className={styles.loginError}>{error}</div>
         <p className={styles.demoHint}>
-          Demo: admin@flood.lk / admin123 &nbsp;
+          Demo: admin / admin123 &nbsp;
         </p>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext } from 'react';
+import { BASE_URL } from '../config';
 
 const AuthContext = createContext();
-const BASE_URL = "http://localhost:8080";
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,7 +15,9 @@ export const AuthProvider = ({ children }) => {
       const res = await fetch(`${BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        // Backend's /auth/login expects {username, password} — it has no concept of
+        // email-based login, only a single env-configured admin account.
+        body: JSON.stringify({ username: email, password })
       });
       const data = await res.json();
       if (res.ok) {

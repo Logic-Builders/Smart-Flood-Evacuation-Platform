@@ -2,21 +2,25 @@ package routing
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/logicbuilders/flood-evacuation-backend/internal/domain"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/external"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
 	"github.com/logicbuilders/flood-evacuation-backend/pkg/geo"
 	"github.com/logicbuilders/flood-evacuation-backend/pkg/graph"
 )
 
 type RoutingService struct {
 	floodSource   external.FloodDataSource
+	roadRepo      repositories.RoadRepository
 	riskEvaluator *RiskEvaluator
 }
 
-func NewRoutingService(floodSource external.FloodDataSource) *RoutingService {
+func NewRoutingService(floodSource external.FloodDataSource, roadRepo repositories.RoadRepository) *RoutingService {
 	return &RoutingService{
 		floodSource:   floodSource,
+		roadRepo:      roadRepo,
 		riskEvaluator: NewRiskEvaluator(),
 	}
 }
@@ -27,7 +31,12 @@ type RouteResult struct {
 	TotalCost   float64
 }
 
-func (s *RoutingService) GetRoute(segments []domain.RoadSegment, reports []domain.HazardReport, startID, goalID string) (*RouteResult, error) {
+func (s *RoutingService) GetRoute(reports []domain.HazardReport, startID, goalID string) (*RouteResult, error) {
+	segments, err := s.roadRepo.GetAllSegments()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load road segments: %w", err)
+	}
+
 	g := graph.NewGraph()
 
 	for _, seg := range segments {
@@ -50,13 +59,22 @@ func (s *RoutingService) GetRoute(segments []domain.RoadSegment, reports []domai
 			floodRisk = 0.1
 		}
 
-		segReports := filterReportsForSegment(reports, seg)
-		weight := s.riskEvaluator.ComputeWeight(seg, floodRisk, segReports)
+		segReports := filterReportsForSegment(reports, *seg)
+		weight := s.riskEvaluator.ComputeWeight(*seg, floodRisk, segReports)
 
 		g.AddEdge(seg.StartNodeID.String(), graph.Edge{
 			To:     seg.EndNodeID.String(),
 			Weight: weight,
 		})
+		// The demo network got bidirectionality by literally duplicating each edge in
+		// both directions; real OSM-imported segments are one row per direction, so
+		// add the reverse edge here unless the road is genuinely one-way.
+		if !seg.IsOneWay {
+			g.AddEdge(seg.EndNodeID.String(), graph.Edge{
+				To:     seg.StartNodeID.String(),
+				Weight: weight,
+			})
+		}
 	}
 
 	path, cost := graph.AStar(g, startID, goalID)

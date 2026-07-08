@@ -16,9 +16,13 @@ type ReportRepository interface {
 
 // RoadRepository — roads and their current risk weights
 type RoadRepository interface {
+	GetAllSegments() ([]*domain.RoadSegment, error)
 	GetRoadsByArea(polygon domain.GeoPolygon) ([]*domain.RoadSegment, error)
 	GetRoadByID(id uuid.UUID) (*domain.RoadSegment, error)
 	UpdateRoadWeight(id uuid.UUID, floodRisk float64, hazardScore float64) error
+	NearestNodeID(lat, lng float64) (uuid.UUID, error)
+	NodeCoords(nodeID uuid.UUID) (lat, lng float64, err error)
+	GetNetworkForMap() (nodes, segments []map[string]interface{}, err error)
 }
 
 // UserRepository — user management

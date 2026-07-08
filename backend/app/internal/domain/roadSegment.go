@@ -18,6 +18,7 @@ type RoadSegment struct {
 	Condition   RoadCondition
 	FloodRisk   float64
 	HazardScore float64
+	IsOneWay    bool
 	StartPoint  GeoPoint
 	EndPoint    GeoPoint
 }

@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+export { BASE_URL } from './env';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,7 +66,6 @@ export const C = {
 
 // ─── App constants ────────────────────────────────────────────────────────────
 
-export const BASE_URL          = 'http://10.10.11.136:8080';
 export const REFRESH_INTERVAL  = 60;
 export const DETOUR_OFFSET_DEG = 0.008;
 export const PROXIMITY_M       = 200;

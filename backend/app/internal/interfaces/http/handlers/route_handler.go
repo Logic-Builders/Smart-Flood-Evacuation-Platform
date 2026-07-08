@@ -5,28 +5,35 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/reports"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/routing"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/domain"
-	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/data"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/dto"
 )
 
 type RouteHandler struct {
 	service       *routing.RoutingService
 	reportService *reports.ReportService
+	roadRepo      repositories.RoadRepository
 }
 
-func NewRouteHandler(service *routing.RoutingService, reportService *reports.ReportService) *RouteHandler {
-	return &RouteHandler{service: service, reportService: reportService}
+func NewRouteHandler(service *routing.RoutingService, reportService *reports.ReportService, roadRepo repositories.RoadRepository) *RouteHandler {
+	return &RouteHandler{service: service, reportService: reportService, roadRepo: roadRepo}
 }
 
 func (h *RouteHandler) GetNetwork(c *gin.Context) {
+	nodes, segments, err := h.roadRepo.GetNetworkForMap()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"nodes":    data.GetDemoNodes(),
-			"segments": data.SegmentsForMap(),
+			"nodes":    nodes,
+			"segments": segments,
 		},
 	})
 }
@@ -38,10 +45,13 @@ func (h *RouteHandler) PostRoute(c *gin.Context) {
 		return
 	}
 
-	startID := data.NearestNode(req.StartLat, req.StartLng)
-	goalID := data.NearestNode(req.EndLat, req.EndLng)
+	startID, endID, err := h.nearestNodePair(req.StartLat, req.StartLng, req.EndLat, req.EndLng)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 
-	h.respondRoute(c, startID, goalID)
+	h.respondRoute(c, startID, endID)
 }
 
 func (h *RouteHandler) GetRoute(c *gin.Context) {
@@ -61,16 +71,30 @@ func (h *RouteHandler) GetRoute(c *gin.Context) {
 		return
 	}
 
-	startID := data.NearestNode(startLat, startLng)
-	goalID := data.NearestNode(endLat, endLng)
+	startID, goalID, err := h.nearestNodePair(startLat, startLng, endLat, endLng)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 	h.respondRoute(c, startID, goalID)
 }
 
+func (h *RouteHandler) nearestNodePair(startLat, startLng, endLat, endLng float64) (startID, goalID string, err error) {
+	start, err := h.roadRepo.NearestNodeID(startLat, startLng)
+	if err != nil {
+		return "", "", err
+	}
+	goal, err := h.roadRepo.NearestNodeID(endLat, endLng)
+	if err != nil {
+		return "", "", err
+	}
+	return start.String(), goal.String(), nil
+}
+
 func (h *RouteHandler) respondRoute(c *gin.Context, startID, goalID string) {
-	segments := data.GetDemoSegments()
 	reports := h.activeReports()
 
-	result, err := h.service.GetRoute(segments, reports, startID, goalID)
+	result, err := h.service.GetRoute(reports, startID, goalID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -78,8 +102,12 @@ func (h *RouteHandler) respondRoute(c *gin.Context, startID, goalID string) {
 
 	coords := make([][]float64, 0, len(result.Path))
 	for _, nodeID := range result.Path {
-		lat, lng, ok := data.NodeCoords(nodeID)
-		if ok {
+		id, err := uuid.Parse(nodeID)
+		if err != nil {
+			continue
+		}
+		lat, lng, err := h.roadRepo.NodeCoords(id)
+		if err == nil {
 			coords = append(coords, []float64{lat, lng})
 		}
 	}

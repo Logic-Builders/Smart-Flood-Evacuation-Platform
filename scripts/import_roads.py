@@ -1,6 +1,12 @@
+import os
 import osmnx as ox
 import psycopg2
 import uuid
+
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgres://postgres:password@localhost:5432/flood_evacuation?sslmode=disable",
+)
 
 # Download road network for Gal Oya / Ampara District
 print("Downloading road data from OSM...")
@@ -10,14 +16,8 @@ G = ox.graph_from_place("Ampara District, Eastern Province, Sri Lanka", network_
 edges = ox.graph_to_gdfs(G, nodes=False)
 print(f"Downloaded {len(edges)} road segments")
 
-# Connect to DB
-conn = psycopg2.connect(
-    host="localhost",
-    port=5432,
-    dbname="flood_evacuation",
-    user="postgres",
-    password="password"
-)
+# Connect to DB (psycopg2 accepts a libpq/SQLAlchemy-style URI directly)
+conn = psycopg2.connect(DATABASE_URL)
 cur = conn.cursor()
 
 # Clear dummy data

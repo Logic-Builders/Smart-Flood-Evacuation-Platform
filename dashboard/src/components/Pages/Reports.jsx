@@ -2,9 +2,8 @@ import React from 'react';
 import { Button } from '../UI/Button';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+import { BASE_URL } from '../../config';
 import styles from './Reports.module.css';
-
-const BASE_URL = "http://localhost:8080";
 
 export const Reports = () => {
   const { showToast } = useToast();
@@ -23,7 +22,7 @@ export const Reports = () => {
       });
       const data = await res.json();
       if (data.success) {
-        setReports(data.data.reports);
+        setReports(data.data.reports || []);
       }
     } catch (err) {
       showToast('Failed to load reports', 'var(--danger)');

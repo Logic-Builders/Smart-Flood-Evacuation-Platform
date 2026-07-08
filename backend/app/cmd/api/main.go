@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/logicbuilders/flood-evacuation-backend/config"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/application/floodzones"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/reports"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/routing"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/external"
@@ -39,9 +40,14 @@ func main() {
 
 	authHandler := handlers.NewAuthHandler(cfg)
 
+	roadRepo := postgres.NewPostgresRoadRepository(pool)
 	floodAdaptor := external.NewMockFloodAdaptor()
-	routingService := routing.NewRoutingService(floodAdaptor)
-	routeHandler := handlers.NewRouteHandler(routingService, reportService)
+	routingService := routing.NewRoutingService(floodAdaptor, roadRepo)
+	routeHandler := handlers.NewRouteHandler(routingService, reportService, roadRepo)
+
+	floodZoneRepo := postgres.NewPostgresFloodZoneRepository(pool)
+	floodZoneService := floodzones.NewFloodZoneService(floodZoneRepo)
+	floodZoneHandler := handlers.NewFloodZoneHandler(floodZoneService)
 
 	router := gin.Default()
 	router.Use(middleware.CORS(cfg.CORSOrigin))
@@ -61,6 +67,7 @@ func main() {
 		v1.GET("/network", routeHandler.GetNetwork)
 		v1.POST("/route", routeHandler.PostRoute)
 		v1.GET("/route", routeHandler.GetRoute)
+		v1.GET("/flood-zones", floodZoneHandler.GetActive)
 	}
 
 	admin := v1.Group("/admin")

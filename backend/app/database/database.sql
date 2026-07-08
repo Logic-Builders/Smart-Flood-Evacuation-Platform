@@ -423,6 +423,20 @@ VALUES
     ('admin@flood.lk',   'Admin User',     '$2b$10$placeholder_hash_admin',   'ADMIN'::user_role),
     ('evacuee@flood.lk', 'Test Evacuee',   '$2b$10$placeholder_hash_user',    'PUBLIC'::user_role),
     ('rescue@flood.lk',  'Rescue Officer', '$2b$10$placeholder_hash_rescue',  'RESCUE'::user_role);
+
+-- Fixed-UUID row for reports submitted by the unauthenticated public mobile app.
+-- hazard_reports.reporter_id is NOT NULL REFERENCES users(user_id); a well-known ID (rather
+-- than gen_random_uuid()) lets the Go backend reference it directly (domain.AnonymousReporterID).
+INSERT INTO flood_system.users (user_id, email, full_name, password_hash, role, is_active)
+VALUES (
+    '00000000-0000-0000-0000-000000000099',
+    'anonymous@public.flood-system.local',
+    'Anonymous Public Reporter',
+    'NO_LOGIN_ACCOUNT',
+    'PUBLIC'::user_role,
+    TRUE
+)
+ON CONFLICT (user_id) DO NOTHING;
 INSERT INTO flood_system.flood_risk_zones (
     gauge_id, zone_name, severity, confidence_score, geometry, data_source, is_active
 )
