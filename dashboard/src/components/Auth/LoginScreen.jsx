@@ -26,10 +26,10 @@ export const LoginScreen = () => {
     <div className={styles.loginScreen}>
       <div className={styles.loginCard}>
         <div className={styles.loginLogo}>
-          <div className={styles.icon}>🌊</div>
+          <div className={styles.icon}>FG</div>
           <div>
             <h1>FloodGuard</h1>
-            <span>Admin Command Center</span>
+            <span>Evacuation Authority Portal</span>
           </div>
         </div>
         <div className={styles.loginLabel}>Username</div>

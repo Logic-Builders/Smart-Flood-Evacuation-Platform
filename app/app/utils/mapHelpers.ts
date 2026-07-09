@@ -153,7 +153,7 @@ async function fetchBackendRoute(start: Coord, end: Coord): Promise<Coord[] | nu
   try {
     const res = await fetch(`${BASE_URL}/api/v1/route`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'bypass-tunnel-reminder': 'true' },
       body: JSON.stringify({
         start_lat: start.latitude, start_lng: start.longitude,
         end_lat: end.latitude, end_lng: end.longitude,

@@ -36,4 +36,5 @@ type UserRepository interface {
 type FloodDataSource interface {
 	GetFloodZones(region domain.GeoPolygon) ([]*domain.FloodZone, error)
 	GetFloodStatus(gaugeID string) (*domain.FloodStatus, error)
+	DeactivateZone(id uuid.UUID) error
 }

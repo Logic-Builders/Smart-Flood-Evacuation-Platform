@@ -1,20 +1,27 @@
 .card {
-  background: #111520;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 22px;
 }
 
 .cardTitle {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-body);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.94rem;
+  color: var(--ink);
   margin-bottom: 16px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .cardTitle span {
-  display: inline-block;
+  display: inline-flex;
+  color: var(--ink-faint);
+}
+
+.cardTitle span svg {
+  width: 16px;
+  height: 16px;
 }

@@ -167,19 +167,25 @@ export default function MapScreen() {
 
   const loadFloodZones = async () => {
     try {
-      const res  = await fetch(`${BASE_URL}/api/v1/flood-zones`, { signal: abortAfter(5000) });
+      const res  = await fetch(`${BASE_URL}/api/v1/flood-zones`, { signal: abortAfter(5000), headers: { 'bypass-tunnel-reminder': 'true' } });
       const json = await res.json();
       if (json.success && json.data?.zones?.length) { setFloodZones(json.data.zones); setRefreshCountdown(REFRESH_INTERVAL); return; }
-    } catch (_) {}
+      console.warn('[loadFloodZones] unexpected response', BASE_URL, json);
+    } catch (err) {
+      console.warn('[loadFloodZones] fetch failed', BASE_URL, err);
+    }
     setFloodZones(MOCK_ZONES); setRefreshCountdown(REFRESH_INTERVAL);
   };
 
   const loadHazardReports = async () => {
     try {
-      const res  = await fetch(`${BASE_URL}/api/v1/reports/active`, { signal: abortAfter(5000) });
+      const res  = await fetch(`${BASE_URL}/api/v1/reports/active`, { signal: abortAfter(5000), headers: { 'bypass-tunnel-reminder': 'true' } });
       const json = await res.json();
       if (json.success && json.data?.reports?.length) { setHazardReports(json.data.reports); return; }
-    } catch (_) {}
+      console.warn('[loadHazardReports] unexpected response', BASE_URL, json);
+    } catch (err) {
+      console.warn('[loadHazardReports] fetch failed', BASE_URL, err);
+    }
     setHazardReports(MOCK_REPORTS);
   };
 

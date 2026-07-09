@@ -1,29 +1,51 @@
 .badge {
-  font-size: 0.65rem;
-  font-family: 'DM Mono', monospace;
-  padding: 3px 8px;
-  border-radius: 20px;
-  display: inline-block;
-  background: rgba(0, 201, 167, 0.15);
-  color: #00c9a7;
+  font-size: 0.7rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2.5px 8px;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .badge.default {
-  background: rgba(0, 201, 167, 0.15);
-  color: #00c9a7;
+  background: var(--safe-bg);
+  color: var(--safe);
+}
+.badge.default::before {
+  background: var(--safe);
 }
 
 .badge.red {
-  background: rgba(255, 63, 91, 0.15);
-  color: #ff3f5b;
+  background: var(--crit-bg);
+  color: var(--crit);
+}
+.badge.red::before {
+  background: var(--crit);
 }
 
 .badge.yellow {
-  background: rgba(247, 201, 72, 0.15);
-  color: #f7c948;
+  background: var(--watch-bg);
+  color: var(--watch);
+}
+.badge.yellow::before {
+  background: var(--watch);
 }
 
 .badge.live {
-  background: rgba(255, 63, 91, 0.15);
-  color: #ff3f5b;
+  background: var(--crit-bg);
+  color: var(--crit);
+}
+.badge.live::before {
+  background: var(--crit);
 }

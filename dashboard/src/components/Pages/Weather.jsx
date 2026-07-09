@@ -16,27 +16,27 @@ export const Weather = () => {
   const [weatherList] = useState(WEATHER_DATA);
 
   const handleSubmit = () => {
-    showToast('✅ Weather data recorded', 'var(--accent)');
+    showToast('Weather data recorded', 'var(--safe)');
   };
 
   const handleUpdateMap = () => {
-    showToast('📍 Area updated on map', 'var(--info)');
+    showToast('Area updated on map', 'var(--authority)');
   };
 
   const getRiskClass = (risk) => {
-    const map = { Critical: 'sev-high', High: 'sev-med', Medium: 'sev-med', Low: 'sev-low' };
-    return map[risk] || 'sev-low';
+    const map = { Critical: 'crit', High: 'warn', Medium: 'warn', Low: 'watch' };
+    return map[risk] || 'watch';
   };
 
   return (
     <div className={styles.weather}>
-      <div className={styles.pageHeader}>
-        <h2>Weather &amp; Authority Data</h2>
-        <p>Official data from meteorological departments and local authorities</p>
+      <div className={styles.pageHeading}>
+        <h1>Weather &amp; Authority Data</h1>
+        <span className={styles.updated}>Official meteorological &amp; local authority feeds</span>
       </div>
 
-      <div className={styles.twoCol} style={{ marginBottom: '22px' }}>
-        <Card title="➕ Add New Data Point">
+      <div className={styles.twoCol}>
+        <Card title="Add New Data Point">
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Source</label>
@@ -83,29 +83,29 @@ export const Weather = () => {
           </Button>
         </Card>
 
-        <Card title="🌡 Current Conditions">
+        <Card title="Current Conditions">
           <div className={styles.conditionsGrid}>
             <div className={styles.conditionItem}>
               <div className={styles.condLabel}>Rainfall 24h</div>
-              <div className={`${styles.condVal} ${styles.red}`}>148mm</div>
+              <div className={`${styles.condVal} ${styles.crit}`}>148mm</div>
             </div>
             <div className={styles.conditionItem}>
               <div className={styles.condLabel}>Wind Speed</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: '1.1rem', fontWeight: 700, marginTop: '4px', color: '#f7c948' }}>62 km/h</div>
+              <div className={`${styles.condVal} ${styles.warn}`}>62 km/h</div>
             </div>
             <div className={styles.conditionItem}>
               <div className={styles.condLabel}>River Level</div>
-              <div className={`${styles.condVal} ${styles.red}`}>+2.4m</div>
+              <div className={`${styles.condVal} ${styles.crit}`}>+2.4m</div>
             </div>
             <div className={styles.conditionItem}>
               <div className={styles.condLabel}>Forecast 6h</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: '1.1rem', fontWeight: 700, marginTop: '4px', color: '#f7c948' }}>+120mm</div>
+              <div className={`${styles.condVal} ${styles.warn}`}>+120mm</div>
             </div>
           </div>
         </Card>
       </div>
 
-      <Card title="📋 Recent Data Entries">
+      <Card title="Recent Data Entries">
         <table className={styles.table}>
           <thead>
             <tr>
@@ -124,11 +124,11 @@ export const Weather = () => {
                   <span className={styles.sourceTag}>{w.source}</span>
                 </td>
                 <td>{w.district}</td>
-                <td style={{ fontFamily: "'DM Mono', monospace" }}>{w.rainfall}</td>
+                <td className={styles.mono}>{w.rainfall}</td>
                 <td>
-                  <span className={`${styles.sevBadge} ${styles[getRiskClass(w.risk)]}`}>{w.risk}</span>
+                  <span className={`${styles.sevChip} ${styles[getRiskClass(w.risk)]}`}>{w.risk}</span>
                 </td>
-                <td style={{ fontFamily: "'DM Mono', monospace", color: '#6b7a99' }}>{w.time}</td>
+                <td className={styles.time}>{w.time}</td>
                 <td>
                   <Button variant="secondary" size="sm" onClick={handleUpdateMap}>
                     Update Map

@@ -1,17 +1,19 @@
 .btn {
   padding: 8px 16px;
-  border-radius: 8px;
-  border: none;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-soft);
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   font-size: 0.82rem;
   font-weight: 600;
-  transition: transform 0.15s, box-shadow 0.2s;
+  transition: background 0.12s, border-color 0.12s;
   outline: none;
 }
 
 .btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  background: var(--surface-2);
 }
 
 .btn:disabled {
@@ -20,46 +22,45 @@
 }
 
 .btn.primary {
-  background: #00c9a7;
-  color: #000;
-  border: none;
+  background: var(--authority);
+  color: #fff;
+  border-color: var(--authority);
 }
 
 .btn.primary:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(0, 201, 167, 0.3);
+  background: var(--authority-deep);
 }
 
 .btn.approve {
-  background: rgba(0, 201, 167, 0.15);
-  color: #00c9a7;
-  border: 1px solid rgba(0, 201, 167, 0.3);
+  background: var(--safe-bg);
+  color: var(--safe);
+  border: 1px solid var(--safe);
 }
 
 .btn.approve:hover:not(:disabled) {
-  background: rgba(0, 201, 167, 0.25);
-  box-shadow: 0 4px 12px rgba(0, 201, 167, 0.2);
+  background: var(--safe);
+  color: #fff;
 }
 
 .btn.reject {
-  background: rgba(255, 63, 91, 0.1);
-  color: #ff3f5b;
-  border: 1px solid rgba(255, 63, 91, 0.25);
+  background: var(--surface);
+  color: var(--crit);
+  border: 1px solid var(--line-strong);
 }
 
 .btn.reject:hover:not(:disabled) {
-  background: rgba(255, 63, 91, 0.2);
-  box-shadow: 0 4px 12px rgba(255, 63, 91, 0.2);
+  background: var(--crit-bg);
+  border-color: var(--crit);
 }
 
 .btn.secondary {
-  background: rgba(74, 158, 255, 0.1);
-  color: #4a9eff;
-  border: 1px solid rgba(74, 158, 255, 0.25);
+  background: var(--surface);
+  color: var(--authority);
+  border: 1px solid var(--line-strong);
 }
 
 .btn.secondary:hover:not(:disabled) {
-  background: rgba(74, 158, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.2);
+  background: var(--surface-2);
 }
 
 .btn.md {

@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import { LoginScreen } from './components/Auth/LoginScreen';
-import { Topbar } from './components/Layout/Topbar';
-import { Sidebar } from './components/Layout/Sidebar';
+import { Masthead } from './components/Layout/Masthead';
+import { SectionNav } from './components/Layout/SectionNav';
 import { Overview } from './components/Pages/Overview';
 import { Reports } from './components/Pages/Reports';
 import { Weather } from './components/Pages/Weather';
 import { Dams } from './components/Pages/Dams';
 import { FloodMap } from './components/Pages/Map';
-import { System } from './components/Pages/System';
 import { Toast } from './components/UI/Toast';
 import styles from './App.module.css';
 
@@ -28,8 +27,6 @@ function App() {
         return <Dams />;
       case 'map':
         return <FloodMap />;
-      case 'system':
-        return <System />;
       default:
         return <Overview onTabChange={setActiveTab} />;
     }
@@ -41,9 +38,9 @@ function App() {
 
   return (
     <div className={styles.app}>
-      <Topbar />
+      <Masthead />
+      <SectionNav activeTab={activeTab} onTabChange={setActiveTab} />
       <div className={styles.mainBody}>
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
         <main className={styles.content}>{renderPage()}</main>
       </div>
       <Toast />

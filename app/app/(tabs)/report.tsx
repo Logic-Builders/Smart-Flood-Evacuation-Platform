@@ -43,7 +43,7 @@ export default function FloodReportScreen() {
   useEffect(() => {
     const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 5000);
-    fetch(`${BASE_URL}/api/v1/flood-zones`, { signal: ctrl.signal })
+    fetch(`${BASE_URL}/api/v1/flood-zones`, { signal: ctrl.signal, headers: { 'bypass-tunnel-reminder': 'true' } })
       .then(r => r.json())
       .then(j => { if (j.success && j.data?.zones?.length) setFloodZones(j.data.zones); })
       .catch(() => {})
@@ -62,7 +62,7 @@ export default function FloodReportScreen() {
       setLoading(true);
       const response = await fetch(`${BASE_URL}/api/v1/reports`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'bypass-tunnel-reminder': 'true' },
         body: JSON.stringify({
           latitude:    coord.latitude,
           longitude:   coord.longitude,

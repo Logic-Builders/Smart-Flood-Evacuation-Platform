@@ -3,6 +3,7 @@ package floodzones
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/domain"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/infrastructure/repositories"
 )
@@ -23,4 +24,13 @@ func (s *FloodZoneService) GetActiveZones() ([]*domain.FloodZone, error) {
 		return nil, fmt.Errorf("failed to fetch active flood zones: %w", err)
 	}
 	return zones, nil
+}
+
+// DeactivateZone removes a flood zone from the active set (e.g. an admin
+// clearing it from the map once conditions have subsided).
+func (s *FloodZoneService) DeactivateZone(id uuid.UUID) error {
+	if err := s.repo.DeactivateZone(id); err != nil {
+		return fmt.Errorf("failed to deactivate flood zone: %w", err)
+	}
+	return nil
 }

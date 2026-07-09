@@ -24,6 +24,7 @@ type ReportResponse struct {
 	Description string      `json:"description"`
 	Status      string      `json:"status"`
 	Location    LocationDTO `json:"location"`
+	SubmittedAt string      `json:"submitted_at"`
 	ExpiresAt   string      `json:"expires_at"`
 }
 

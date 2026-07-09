@@ -5,7 +5,7 @@ const ToastContext = createContext();
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const showToast = useCallback((message, color = 'var(--accent)', duration = 3000) => {
+  const showToast = useCallback((message, color = 'var(--safe)', duration = 3000) => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, color }]);
     setTimeout(() => {

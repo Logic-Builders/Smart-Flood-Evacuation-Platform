@@ -1,21 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
-
 :root {
-  --bg: #0a0d12;
-  --surface: #111520;
-  --surface2: #161c2a;
-  --surface3: #1d2538;
-  --border: rgba(255, 255, 255, 0.07);
-  --accent: #00c9a7;
-  --accent2: #ff6b35;
-  --accent3: #f7c948;
-  --danger: #ff3f5b;
-  --info: #4a9eff;
-  --text: #e8eaf0;
-  --muted: #6b7a99;
-  --font-head: 'Syne', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-  --font-body: 'DM Sans', sans-serif;
+  --paper: #f4f5f2;
+  --surface: #ffffff;
+  --surface-2: #eef0ec;
+  --ink: #16212c;
+  --ink-soft: #53606c;
+  --ink-faint: #7c8890;
+  --authority: #1e3a5f;
+  --authority-deep: #12253f;
+  --line: #d8dcd7;
+  --line-strong: #c3c9c2;
+
+  --crit: #9e2b25;
+  --crit-bg: #f8e9e7;
+  --warn: #96591a;
+  --warn-bg: #f7ecdd;
+  --watch: #7c6a16;
+  --watch-bg: #f5f0dc;
+  --safe: #1f6b49;
+  --safe-bg: #e7f1ec;
+
+  --font-display: Georgia, 'Times New Roman', Times, serif;
+  --font-body: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: Consolas, 'SF Mono', 'IBM Plex Mono', monospace;
+
+  --radius: 3px;
 }
 
 * {
@@ -30,16 +38,18 @@
 }
 
 html {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--font-body);
 }
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/floodzones"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/dto"
 )
@@ -45,5 +46,24 @@ func (h *FloodZoneHandler) GetActive(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    gin.H{"zones": response},
+	})
+}
+
+// Deactivate handles PATCH /api/v1/admin/flood-zones/:id/deactivate
+func (h *FloodZoneHandler) Deactivate(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid zone ID"})
+		return
+	}
+
+	if err := h.service.DeactivateZone(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    gin.H{"message": "Flood zone deactivated"},
 	})
 }

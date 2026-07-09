@@ -3,8 +3,10 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/domain"
@@ -66,6 +68,20 @@ func (r *PostgresFloodZoneRepository) GetFloodZones(region domain.GeoPolygon) ([
 		return nil, err
 	}
 	return zones, nil
+}
+
+// DeactivateZone marks a flood zone inactive (soft delete) so it stops
+// appearing in GetFloodZones/the active_flood_zones view.
+func (r *PostgresFloodZoneRepository) DeactivateZone(id uuid.UUID) error {
+	query := `UPDATE flood_system.flood_risk_zones SET is_active = FALSE WHERE zone_id = $1`
+	tag, err := r.pool.Exec(context.Background(), query, id)
+	if err != nil {
+		return fmt.Errorf("failed to deactivate flood zone: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return errors.New("flood zone not found")
+	}
+	return nil
 }
 
 // GetFloodStatus returns the current severity/location for a specific gauge.

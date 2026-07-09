@@ -76,6 +76,7 @@ func main() {
 		admin.GET("/reports/pending", reportHandler.GetPending)
 		admin.PATCH("/reports/:id/approve", reportHandler.Approve)
 		admin.PATCH("/reports/:id/reject", reportHandler.Reject)
+		admin.PATCH("/flood-zones/:id/deactivate", floodZoneHandler.Deactivate)
 	}
 
 	log.Printf("Server starting on port %s (env=%s)", cfg.Port, cfg.AppEnv)

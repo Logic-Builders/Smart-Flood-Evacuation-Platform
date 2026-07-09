@@ -1,9 +1,10 @@
 import React from 'react';
-import { Button } from '../UI/Button';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { BASE_URL } from '../../config';
 import styles from './Reports.module.css';
+
+const sevClass = (n) => (n >= 4 ? 'crit' : n === 3 ? 'warn' : 'watch');
 
 export const Reports = () => {
   const { showToast } = useToast();
@@ -25,7 +26,7 @@ export const Reports = () => {
         setReports(data.data.reports || []);
       }
     } catch (err) {
-      showToast('Failed to load reports', 'var(--danger)');
+      showToast('Failed to load reports', 'var(--crit)');
     } finally {
       setLoading(false);
     }
@@ -40,52 +41,63 @@ export const Reports = () => {
       if (res.ok) {
         setReports((prev) => prev.filter((r) => r.id !== id));
         showToast(
-          action === 'approve' ? `✅ Report ${id} approved` : `🗑 Report ${id} rejected`,
-          action === 'approve' ? 'var(--accent)' : 'var(--danger)'
+          action === 'approve' ? `Report ${id} approved` : `Report ${id} rejected`,
+          action === 'approve' ? 'var(--safe)' : 'var(--crit)'
         );
       }
     } catch (err) {
-      showToast('Action failed', 'var(--danger)');
+      showToast('Action failed', 'var(--crit)');
     }
   };
 
-  if (loading) return <div className={styles.reports}><p>Loading reports...</p></div>;
-
   return (
     <div className={styles.reports}>
-      <div className={styles.pageHeader}>
-        <h2>User Reports</h2>
-        <p>Verify citizen-submitted flood reports with photo evidence</p>
+      <div className={styles.pageHeading}>
+        <h1>Citizen Reports</h1>
+        <span className={styles.updated}>{reports.length} pending review</span>
       </div>
-      <div className={styles.reportsList}>
-        {reports.length === 0 ? (
-          <p>No pending reports.</p>
+
+      <div className={styles.panel}>
+        {loading ? (
+          <p className={styles.emptyState}>Loading reports…</p>
+        ) : reports.length === 0 ? (
+          <p className={styles.emptyState}>No pending reports.</p>
         ) : (
-          reports.map((report) => (
-            <div key={report.id} className={styles.reportCard}>
-              <div className={styles.reportBody}>
-                <div>
-                  <div className={styles.reportLoc}>
-                    {report.report_type}
-                    <span className={styles.sevBadge}>SEV {report.severity}</span>
-                  </div>
-                  <div className={styles.reportDesc}>{report.description}</div>
-                  <div className={styles.reportMeta}>
-                    <span>📋 {report.id}</span>
-                    <span>📍 {report.location?.latitude?.toFixed(4)}, {report.location?.longitude?.toFixed(4)}</span>
-                  </div>
-                </div>
-              </div>
-              <div className={styles.reportActions}>
-                <Button variant="approve" size="sm" onClick={() => handleReport('approve', report.id)}>
-                  ✓ Approve
-                </Button>
-                <Button variant="reject" size="sm" onClick={() => handleReport('reject', report.id)}>
-                  ✗ Reject
-                </Button>
-              </div>
-            </div>
-          ))
+          <table className={styles.reportsTable}>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Severity</th>
+                <th>Location</th>
+                <th>Description</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map((report) => (
+                <tr key={report.id}>
+                  <td className={styles.rtype}>{report.report_type}</td>
+                  <td>
+                    <span className={`${styles.sevChip} ${styles[sevClass(report.severity)]}`}>SEV {report.severity}</span>
+                  </td>
+                  <td className={styles.coord}>
+                    {report.location?.latitude?.toFixed(4)}, {report.location?.longitude?.toFixed(4)}
+                  </td>
+                  <td className={styles.desc}>{report.description}</td>
+                  <td>
+                    <div className={styles.actionRow}>
+                      <button className={`${styles.actionBtn} ${styles.primary}`} onClick={() => handleReport('approve', report.id)}>
+                        Approve
+                      </button>
+                      <button className={`${styles.actionBtn} ${styles.reject}`} onClick={() => handleReport('reject', report.id)}>
+                        Reject
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

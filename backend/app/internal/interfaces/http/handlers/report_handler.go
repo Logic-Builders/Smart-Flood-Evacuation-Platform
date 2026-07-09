@@ -66,6 +66,7 @@ func (h *ReportHandler) Submit(c *gin.Context) {
 			Description: report.Description,
 			Status:      string(report.ValidationStatus),
 			Location:    dto.LocationDTO{Latitude: report.Location.Lat, Longitude: report.Location.Lng},
+			SubmittedAt: report.CreatedAt.Format("2006-01-02T15:04:05Z"),
 			ExpiresAt:   report.ExpiresAt.Format("2006-01-02T15:04:05Z"),
 		},
 	})
@@ -94,6 +95,7 @@ func (h *ReportHandler) GetActive(c *gin.Context) {
 			Description: r.Description,
 			Status:      string(r.ValidationStatus),
 			Location:    dto.LocationDTO{Latitude: r.Location.Lat, Longitude: r.Location.Lng},
+			SubmittedAt: r.CreatedAt.Format("2006-01-02T15:04:05Z"),
 			ExpiresAt:   r.ExpiresAt.Format("2006-01-02T15:04:05Z"),
 		})
 	}
@@ -124,6 +126,7 @@ func (h *ReportHandler) GetPending(c *gin.Context) {
 			Description: r.Description,
 			Status:      string(r.ValidationStatus),
 			Location:    dto.LocationDTO{Latitude: r.Location.Lat, Longitude: r.Location.Lng},
+			SubmittedAt: r.CreatedAt.Format("2006-01-02T15:04:05Z"),
 			ExpiresAt:   r.ExpiresAt.Format("2006-01-02T15:04:05Z"),
 		})
 	}
