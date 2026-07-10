@@ -184,7 +184,12 @@ CREATE TABLE flood_system.dam_stations (
     gate_status     dam_gate_status DEFAULT 'CLOSED',
     discharge_rate_m3s  NUMERIC(10,3),
     last_updated    TIMESTAMPTZ DEFAULT NOW(),
-    is_active       BOOLEAN DEFAULT TRUE
+    is_active       BOOLEAN DEFAULT TRUE,
+    -- set by an admin from the dashboard ("Mark Downstream Risk"); roads within
+    -- alert_radius_km of this dam get auto-blocked while the alert is active
+    downstream_alert BOOLEAN DEFAULT FALSE,
+    alert_radius_km NUMERIC(6,2) DEFAULT 10,
+    alert_set_at    TIMESTAMPTZ
 );
 CREATE INDEX idx_dams_location ON flood_system.dam_stations USING GIST(location);
 CREATE TABLE flood_system.weather_data (
@@ -196,8 +201,13 @@ CREATE TABLE flood_system.weather_data (
     wind_speed_kmh      NUMERIC(6,2),
     humidity_percent    NUMERIC(5,2) CHECK (humidity_percent BETWEEN 0 AND 100),
     temperature_celsius NUMERIC(5,2),
-    forecast_time   TIMESTAMPTZ NOT NULL,
-    recorded_at     TIMESTAMPTZ DEFAULT NOW()
+    forecast_time   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    recorded_at     TIMESTAMPTZ DEFAULT NOW(),
+    -- manual admin entry fields (dashboard "Add New Data Point" form) — coverage_area/
+    -- station_location stay NULL for these since admins log by district, not geometry
+    district        VARCHAR(100),
+    risk_level      flood_severity,
+    notes           TEXT
 );
 CREATE INDEX idx_weather_area ON flood_system.weather_data USING GIST(coverage_area);
 CREATE INDEX idx_weather_time ON flood_system.weather_data(forecast_time);

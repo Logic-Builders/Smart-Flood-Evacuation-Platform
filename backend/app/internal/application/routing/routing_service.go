@@ -11,6 +11,10 @@ import (
 	"github.com/logicbuilders/flood-evacuation-backend/pkg/graph"
 )
 
+// HIGH_RISK roads (e.g. inside a WATCH-severity zone) stay routable but are
+// penalized so A* strongly prefers an alternative when one exists.
+const highRiskPenaltyMultiplier = 5.0
+
 type RoutingService struct {
 	floodSource   external.FloodDataSource
 	roadRepo      repositories.RoadRepository
@@ -51,6 +55,14 @@ func (s *RoutingService) GetRoute(reports []domain.HazardReport, startID, goalID
 			Lng: seg.EndPoint.Lng,
 		})
 
+		// BLOCKED roads (dam downstream alerts, admin flood zones/reports) are
+		// skipped entirely rather than just penalized — A* must never route
+		// through them. seg.Condition is written by dams.SetDownstreamAlert /
+		// floodzones.CreateZone via RoadRepository.SetConditionInArea/Polygon.
+		if !seg.IsPassable() {
+			continue
+		}
+
 		floodRisk, err := s.floodSource.GetFloodRisk(
 			seg.StartPoint.Lat,
 			seg.StartPoint.Lng,
@@ -61,6 +73,9 @@ func (s *RoutingService) GetRoute(reports []domain.HazardReport, startID, goalID
 
 		segReports := filterReportsForSegment(reports, *seg)
 		weight := s.riskEvaluator.ComputeWeight(*seg, floodRisk, segReports)
+		if seg.Condition == domain.ConditionHighRisk {
+			weight *= highRiskPenaltyMultiplier
+		}
 
 		g.AddEdge(seg.StartNodeID.String(), graph.Edge{
 			To:     seg.EndNodeID.String(),

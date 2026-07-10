@@ -71,17 +71,80 @@ func (r *PostgresFloodZoneRepository) GetFloodZones(region domain.GeoPolygon) ([
 }
 
 // DeactivateZone marks a flood zone inactive (soft delete) so it stops
-// appearing in GetFloodZones/the active_flood_zones view.
-func (r *PostgresFloodZoneRepository) DeactivateZone(id uuid.UUID) error {
-	query := `UPDATE flood_system.flood_risk_zones SET is_active = FALSE WHERE zone_id = $1`
-	tag, err := r.pool.Exec(context.Background(), query, id)
+// appearing in GetFloodZones/the active_flood_zones view, returning its
+// boundary so callers can revert any roads auto-blocked because of it.
+func (r *PostgresFloodZoneRepository) DeactivateZone(id uuid.UUID) (domain.GeoPolygon, error) {
+	query := `
+		UPDATE flood_system.flood_risk_zones SET is_active = FALSE
+		WHERE zone_id = $1
+		RETURNING ST_AsGeoJSON(geometry)
+	`
+	var geoJSON string
+	err := r.pool.QueryRow(context.Background(), query, id).Scan(&geoJSON)
 	if err != nil {
-		return fmt.Errorf("failed to deactivate flood zone: %w", err)
+		if err == pgx.ErrNoRows {
+			return domain.GeoPolygon{}, errors.New("flood zone not found")
+		}
+		return domain.GeoPolygon{}, fmt.Errorf("failed to deactivate flood zone: %w", err)
 	}
-	if tag.RowsAffected() == 0 {
-		return errors.New("flood zone not found")
+	return parseGeoJSONPolygon(geoJSON)
+}
+
+// CreateZone inserts a flood warning as a circular zone (ST_Buffer on
+// geography gives an accurate geodesic circle in meters, then cast back to
+// geometry so it matches the column type / SRID 4326). gaugeID/dataSource are
+// empty/"Manual Entry" for dashboard-created zones, or set by the Flood Hub
+// poller so it can find-and-update its own zones on later polls without
+// creating duplicates (see floodhub.Poller).
+func (r *PostgresFloodZoneRepository) CreateZone(zoneName string, severity domain.FloodSeverity, center domain.GeoPoint, radiusKM float64, gaugeID, dataSource string) (*domain.FloodZone, error) {
+	if dataSource == "" {
+		dataSource = "Manual Entry"
 	}
-	return nil
+	query := `
+		INSERT INTO flood_system.flood_risk_zones
+			(gauge_id, zone_name, severity, confidence_score, geometry, data_source, is_active)
+		VALUES (
+			NULLIF($1, ''), $2, $3, 0.9,
+			ST_Buffer(ST_SetSRID(ST_MakePoint($4, $5), 4326)::geography, $6)::geometry,
+			$7, TRUE
+		)
+		RETURNING zone_id, ST_AsGeoJSON(geometry)
+	`
+	var id uuid.UUID
+	var geoJSON string
+	err := r.pool.QueryRow(context.Background(), query,
+		gaugeID, zoneName, string(severity), center.Lng, center.Lat, radiusKM*1000, dataSource,
+	).Scan(&id, &geoJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create flood zone: %w", err)
+	}
+
+	boundary, err := parseGeoJSONPolygon(geoJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse created zone boundary: %w", err)
+	}
+
+	return &domain.FloodZone{ID: id, GaugeID: gaugeID, Severity: severity, Boundary: boundary}, nil
+}
+
+// FindActiveZoneByGauge returns the ID of the current active zone for a
+// gauge, if any.
+func (r *PostgresFloodZoneRepository) FindActiveZoneByGauge(gaugeID string) (uuid.UUID, error) {
+	query := `
+		SELECT zone_id FROM flood_system.flood_risk_zones
+		WHERE gauge_id = $1 AND is_active = TRUE
+		ORDER BY updated_at DESC
+		LIMIT 1
+	`
+	var id uuid.UUID
+	err := r.pool.QueryRow(context.Background(), query, gaugeID).Scan(&id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return uuid.Nil, fmt.Errorf("no active zone for gauge: %s", gaugeID)
+		}
+		return uuid.Nil, fmt.Errorf("failed to find zone for gauge: %w", err)
+	}
+	return id, nil
 }
 
 // GetFloodStatus returns the current severity/location for a specific gauge.

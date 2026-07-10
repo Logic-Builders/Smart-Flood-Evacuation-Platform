@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/application/floodzones"
+	"github.com/logicbuilders/flood-evacuation-backend/internal/domain"
 	"github.com/logicbuilders/flood-evacuation-backend/internal/interfaces/dto"
 )
 
@@ -57,13 +58,56 @@ func (h *FloodZoneHandler) Deactivate(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeactivateZone(id); err != nil {
+	reopened, err := h.service.DeactivateZone(id)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    gin.H{"message": "Flood zone deactivated"},
+		"data":    gin.H{"message": "Flood zone deactivated", "roads_reopened": reopened},
+	})
+}
+
+type createZoneRequest struct {
+	ZoneName  string  `json:"zone_name"`
+	Severity  string  `json:"severity" binding:"required"`
+	Latitude  float64 `json:"latitude" binding:"required"`
+	Longitude float64 `json:"longitude" binding:"required"`
+	RadiusKM  float64 `json:"radius_km" binding:"required"`
+}
+
+// Create handles POST /api/v1/admin/flood-zones — a manually-entered flood
+// warning (dashboard admin picks a center point + radius on the map).
+func (h *FloodZoneHandler) Create(c *gin.Context) {
+	var req createZoneRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+		return
+	}
+
+	zone, blocked, err := h.service.CreateZone(req.ZoneName, domain.FloodSeverity(req.Severity), req.Latitude, req.Longitude, req.RadiusKM)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+		return
+	}
+
+	coords := make([]dto.CoordDTO, 0, len(zone.Boundary.Coordinates))
+	for _, p := range zone.Boundary.Coordinates {
+		coords = append(coords, dto.CoordDTO{Latitude: p.Lat, Longitude: p.Lng})
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"data": gin.H{
+			"zone": dto.FloodZoneResponse{
+				ID:       zone.ID.String(),
+				GaugeID:  zone.GaugeID,
+				Severity: string(zone.Severity),
+				Boundary: dto.BoundaryDTO{Coordinates: coords},
+			},
+			"roads_blocked": blocked,
+		},
 	})
 }

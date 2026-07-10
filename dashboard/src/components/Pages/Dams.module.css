@@ -130,6 +130,52 @@
 .progressFill.warn { background: var(--warn); }
 .progressFill.safe { background: var(--safe); }
 
+.formCard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.formInput,
+.formSelect {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  padding: 9px 12px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.formInput:focus,
+.formSelect:focus {
+  border-color: var(--authority);
+}
+
 @media (max-width: 900px) {
   .damMeta {
     grid-template-columns: 1fr;
@@ -137,5 +183,8 @@
   .damHeader {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .formGrid {
+    grid-template-columns: 1fr;
   }
 }

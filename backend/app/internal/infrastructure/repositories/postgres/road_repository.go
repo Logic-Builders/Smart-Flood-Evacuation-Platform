@@ -245,6 +245,45 @@ func (r *PostgresRoadRepository) GetNetworkForMap() (nodes, segments []map[strin
 	return nodes, segments, nil
 }
 
+// SetConditionInArea bulk-updates every road segment whose geometry falls
+// within radiusKM of center (e.g. a dam's downstream alert radius, or a
+// newly-created flood zone) to the given condition. Returns rows affected.
+func (r *PostgresRoadRepository) SetConditionInArea(center domain.GeoPoint, radiusKM float64, condition domain.RoadCondition) (int, error) {
+	query := `
+		UPDATE flood_system.road_segments
+		SET condition = $1, last_updated = NOW()
+		WHERE ST_DWithin(
+			geometry::geography,
+			ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
+			$4
+		)
+	`
+	tag, err := r.pool.Exec(context.Background(), query, string(condition), center.Lng, center.Lat, radiusKM*1000)
+	if err != nil {
+		return 0, fmt.Errorf("failed to update road conditions in area: %w", err)
+	}
+	return int(tag.RowsAffected()), nil
+}
+
+// SetConditionInPolygon bulk-updates every road segment intersecting the
+// given polygon to the given condition. Returns rows affected.
+func (r *PostgresRoadRepository) SetConditionInPolygon(polygon domain.GeoPolygon, condition domain.RoadCondition) (int, error) {
+	wkt, err := polygonToWKT(polygon)
+	if err != nil {
+		return 0, err
+	}
+	query := `
+		UPDATE flood_system.road_segments
+		SET condition = $1, last_updated = NOW()
+		WHERE ST_Intersects(geometry, ST_SetSRID(ST_GeomFromText($2), 4326))
+	`
+	tag, err := r.pool.Exec(context.Background(), query, string(condition), wkt)
+	if err != nil {
+		return 0, fmt.Errorf("failed to update road conditions in polygon: %w", err)
+	}
+	return int(tag.RowsAffected()), nil
+}
+
 // polygonToWKT renders a domain.GeoPolygon as a WKT POLYGON string, closing the
 // ring if the caller didn't repeat the first point as the last.
 func polygonToWKT(polygon domain.GeoPolygon) (string, error) {
