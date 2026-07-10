@@ -14,7 +14,11 @@ DROP TYPE IF EXISTS delivery_status CASCADE;
 -- 2. extensions and schema
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE SCHEMA IF NOT EXISTS flood_system;
-SET search_path TO flood_system, public;
+-- "extensions" is appended (not just flood_system, public) because managed
+-- Postgres providers like Supabase install PostGIS into a dedicated
+-- "extensions" schema rather than "public". Harmless locally, where that
+-- schema doesn't exist — Postgres silently skips missing schemas in a path.
+SET search_path TO flood_system, public, extensions;
 
 -- 3. enums
 CREATE TYPE flood_severity AS ENUM ('NORMAL', 'WATCH', 'WARNING', 'EXTREME');
