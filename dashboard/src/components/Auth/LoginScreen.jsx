@@ -60,7 +60,7 @@ export const LoginScreen = () => {
         </button>
         <div className={styles.loginError}>{error}</div>
         <p className={styles.demoHint}>
-          Demo: admin / admin123 &nbsp;
+          Demo: Ampara_Admin / logicBuilders &nbsp;
         </p>
       </div>
     </div>
